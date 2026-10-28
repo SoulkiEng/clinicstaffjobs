@@ -22,6 +22,10 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+export function generateStaticParams() {
+  return SEED_JOBS.map((job) => ({ id: job.id }));
+}
+
 export default async function JobDetailPage({ params }: PageProps) {
   const { id } = await params;
   const job = SEED_JOBS.find((j) => j.id === id);
