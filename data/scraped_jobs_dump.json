@@ -1,0 +1,129 @@
+[
+  {
+    "id": "auto-1793211056910-104",
+    "title": "Registered Dental Hygienist Needed",
+    "clinicName": "Plano Family Dental Arts",
+    "clinicType": "Dental",
+    "location": "Plano, TX",
+    "city": "Plano",
+    "state": "TX",
+    "zipCode": "75024",
+    "workType": "Full-time",
+    "minHourly": 48,
+    "maxHourly": 54,
+    "payPeriod": "hour",
+    "payComparison": "+13% Above Plano Avg",
+    "isFeatured": false,
+    "isUrgent": true,
+    "verifiedActive": true,
+    "appointmentTime": "60-Min Hygiene Slots",
+    "softwareUsed": [
+      "Dentrix",
+      "Dexis"
+    ],
+    "benefits": [
+      "100% Employer Health Insurance",
+      "401(k) Match",
+      "Paid CE Stipend",
+      "PTO & Paid Holidays"
+    ],
+    "description": "Looking for a gentle and licensed RDH for our private practice in Plano. We schedule 60 minute prophies and 90 minute SRPs. We use Dentrix Ascend and Dexis platinum sensors. Full health benefits, 401k 4% match, scrub stipend, and 2 weeks PTO.",
+    "responsibilities": [
+      "Provide exceptional direct patient care in an independent practice setting",
+      "Manage electronic charting and documentation in compliance with HIPAA",
+      "Collaborate with healthcare providers and clinical team members"
+    ],
+    "qualifications": [
+      "Valid state professional credential / certification",
+      "Current CPR / BLS certification",
+      "Commitment to warm, compassionate patient care"
+    ],
+    "applyEmail": "careers@planofamilydental.com",
+    "applyUrl": "https://planofamilydentalarts.com",
+    "postedDate": "2026-10-28T18:10:56.910Z"
+  },
+  {
+    "id": "auto-1793211056910-625",
+    "title": "Certified Medical Assistant",
+    "clinicName": "Lonestar Sports Medicine & Rehab",
+    "clinicType": "Dental",
+    "location": "Austin, TX",
+    "city": "Austin",
+    "state": "TX",
+    "zipCode": "75024",
+    "workType": "Full-time",
+    "minHourly": 24,
+    "maxHourly": 28,
+    "payPeriod": "hour",
+    "payComparison": "+12% Above Austin Avg",
+    "isFeatured": false,
+    "isUrgent": true,
+    "verifiedActive": true,
+    "appointmentTime": "Structured Outpatient Flow",
+    "softwareUsed": [
+      "AthenaHealth"
+    ],
+    "benefits": [
+      "100% Employer Health Insurance",
+      "401(k) Match",
+      "Paid CE Stipend",
+      "PTO & Paid Holidays"
+    ],
+    "description": "Busy outpatient private orthopedic surgical practice seeking CMA. Room patients, draw injections, remove sutures, and assist physicians in clinic. AthenaHealth EHR experience is a plus. No weekends or holidays.",
+    "responsibilities": [
+      "Provide exceptional direct patient care in an independent practice setting",
+      "Manage electronic charting and documentation in compliance with HIPAA",
+      "Collaborate with healthcare providers and clinical team members"
+    ],
+    "qualifications": [
+      "Valid state professional credential / certification",
+      "Current CPR / BLS certification",
+      "Commitment to warm, compassionate patient care"
+    ],
+    "applyEmail": "hiring@lonestarsportsmed.com",
+    "applyUrl": "https://lonestarsportsmedicinerehab.com",
+    "postedDate": "2026-10-28T18:10:56.910Z"
+  },
+  {
+    "id": "auto-1793211056910-224",
+    "title": "Aesthetic Nurse / Dermatology MA",
+    "clinicName": "South Beach Dermatology & MedSpa",
+    "clinicType": "Dermatology & MedSpa",
+    "location": "Miami, FL",
+    "city": "Miami",
+    "state": "FL",
+    "zipCode": "75024",
+    "workType": "Full-time",
+    "minHourly": 28,
+    "maxHourly": 34,
+    "payPeriod": "hour",
+    "payComparison": "+18% Above Miami Avg",
+    "isFeatured": false,
+    "isUrgent": true,
+    "verifiedActive": true,
+    "appointmentTime": "Structured Outpatient Flow",
+    "softwareUsed": [
+      "ModMed"
+    ],
+    "benefits": [
+      "100% Employer Health Insurance",
+      "401(k) Match",
+      "Paid CE Stipend",
+      "PTO & Paid Holidays"
+    ],
+    "description": "Boutique private dermatology office in South Beach seeking an experienced MA or Aesthetic Nurse. Assist doctors with Mohs surgery, Botox, dermal fillers, and laser treatments. ModMed EMA software utilized. Great employee skincare discounts.",
+    "responsibilities": [
+      "Provide exceptional direct patient care in an independent practice setting",
+      "Manage electronic charting and documentation in compliance with HIPAA",
+      "Collaborate with healthcare providers and clinical team members"
+    ],
+    "qualifications": [
+      "Valid state professional credential / certification",
+      "Current CPR / BLS certification",
+      "Commitment to warm, compassionate patient care"
+    ],
+    "applyEmail": "jobs@southbeachderm.com",
+    "applyUrl": "https://southbeachdermatologymedspa.com",
+    "postedDate": "2026-10-28T18:10:56.910Z"
+  }
+]
