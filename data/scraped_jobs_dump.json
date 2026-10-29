@@ -1,23 +1,23 @@
 [
   {
-    "id": "auto-1793232960027-143",
+    "id": "auto-plano-family-dental-arts",
     "title": "Registered Dental Hygienist Needed",
-    "clinicName": "Plano Family Dental Arts",
-    "clinicType": "Dental",
+    "clinic_name": "Plano Family Dental Arts",
+    "clinic_type": "Dental",
     "location": "Plano, TX",
     "city": "Plano",
     "state": "TX",
-    "zipCode": "75024",
-    "workType": "Full-time",
-    "minHourly": 48,
-    "maxHourly": 54,
-    "payPeriod": "hour",
-    "payComparison": "+19% Above Plano Avg",
-    "isFeatured": true,
-    "isUrgent": true,
-    "verifiedActive": true,
-    "appointmentTime": "60-Min Hygiene Slots",
-    "softwareUsed": [
+    "zip_code": "75024",
+    "work_type": "Full-time",
+    "min_hourly": 48,
+    "max_hourly": 54,
+    "pay_period": "hour",
+    "pay_comparison": "+18% Above Plano Avg",
+    "is_featured": true,
+    "is_urgent": true,
+    "verified_active": true,
+    "appointment_time": "60-Min Hygiene Slots",
+    "software_used": [
       "Dentrix",
       "Dexis"
     ],
@@ -38,29 +38,28 @@
       "Current CPR / BLS certification",
       "Commitment to warm, compassionate patient care"
     ],
-    "applyEmail": "careers@planofamilydental.com",
-    "applyUrl": "https://planofamilydentalarts.com",
-    "postedDate": "2026-10-29T00:16:00.028Z"
+    "apply_email": "careers@planofamilydental.com",
+    "apply_url": "https://planofamilydentalarts.com"
   },
   {
-    "id": "auto-1793232960028-583",
+    "id": "auto-lonestar-sports-medicine---rehab",
     "title": "Certified Medical Assistant",
-    "clinicName": "Lonestar Sports Medicine & Rehab",
-    "clinicType": "Dental",
+    "clinic_name": "Lonestar Sports Medicine & Rehab",
+    "clinic_type": "Dental",
     "location": "Austin, TX",
     "city": "Austin",
     "state": "TX",
-    "zipCode": "75024",
-    "workType": "Full-time",
-    "minHourly": 24,
-    "maxHourly": 28,
-    "payPeriod": "hour",
-    "payComparison": "+13% Above Austin Avg",
-    "isFeatured": false,
-    "isUrgent": true,
-    "verifiedActive": true,
-    "appointmentTime": "Structured Outpatient Flow",
-    "softwareUsed": [
+    "zip_code": "75024",
+    "work_type": "Full-time",
+    "min_hourly": 24,
+    "max_hourly": 28,
+    "pay_period": "hour",
+    "pay_comparison": "+19% Above Austin Avg",
+    "is_featured": true,
+    "is_urgent": true,
+    "verified_active": true,
+    "appointment_time": "Structured Outpatient Flow",
+    "software_used": [
       "AthenaHealth"
     ],
     "benefits": [
@@ -80,29 +79,28 @@
       "Current CPR / BLS certification",
       "Commitment to warm, compassionate patient care"
     ],
-    "applyEmail": "hiring@lonestarsportsmed.com",
-    "applyUrl": "https://lonestarsportsmedicinerehab.com",
-    "postedDate": "2026-10-29T00:16:00.028Z"
+    "apply_email": "hiring@lonestarsportsmed.com",
+    "apply_url": "https://lonestarsportsmedicinerehab.com"
   },
   {
-    "id": "auto-1793232960028-706",
+    "id": "auto-south-beach-dermatology---medspa",
     "title": "Aesthetic Nurse / Dermatology MA",
-    "clinicName": "South Beach Dermatology & MedSpa",
-    "clinicType": "Dermatology & MedSpa",
+    "clinic_name": "South Beach Dermatology & MedSpa",
+    "clinic_type": "Dermatology & MedSpa",
     "location": "Miami, FL",
     "city": "Miami",
     "state": "FL",
-    "zipCode": "75024",
-    "workType": "Full-time",
-    "minHourly": 28,
-    "maxHourly": 34,
-    "payPeriod": "hour",
-    "payComparison": "+14% Above Miami Avg",
-    "isFeatured": false,
-    "isUrgent": true,
-    "verifiedActive": true,
-    "appointmentTime": "Structured Outpatient Flow",
-    "softwareUsed": [
+    "zip_code": "75024",
+    "work_type": "Full-time",
+    "min_hourly": 28,
+    "max_hourly": 34,
+    "pay_period": "hour",
+    "pay_comparison": "+14% Above Miami Avg",
+    "is_featured": false,
+    "is_urgent": true,
+    "verified_active": true,
+    "appointment_time": "Structured Outpatient Flow",
+    "software_used": [
       "ModMed"
     ],
     "benefits": [
@@ -122,29 +120,28 @@
       "Current CPR / BLS certification",
       "Commitment to warm, compassionate patient care"
     ],
-    "applyEmail": "jobs@southbeachderm.com",
-    "applyUrl": "https://southbeachdermatologymedspa.com",
-    "postedDate": "2026-10-29T00:16:00.028Z"
+    "apply_email": "jobs@southbeachderm.com",
+    "apply_url": "https://southbeachdermatologymedspa.com"
   },
   {
-    "id": "auto-1793232960028-44",
+    "id": "auto-magnolia-vision-care",
     "title": "Optometric Tech & Frame Stylist",
-    "clinicName": "Magnolia Vision Care",
-    "clinicType": "Dental",
+    "clinic_name": "Magnolia Vision Care",
+    "clinic_type": "Dental",
     "location": "Houston, TX",
     "city": "Houston",
     "state": "TX",
-    "zipCode": "75024",
-    "workType": "Full-time",
-    "minHourly": 22,
-    "maxHourly": 26,
-    "payPeriod": "hour",
-    "payComparison": "+16% Above Houston Avg",
-    "isFeatured": false,
-    "isUrgent": true,
-    "verifiedActive": true,
-    "appointmentTime": "Structured Outpatient Flow",
-    "softwareUsed": [
+    "zip_code": "75024",
+    "work_type": "Full-time",
+    "min_hourly": 22,
+    "max_hourly": 26,
+    "pay_period": "hour",
+    "pay_comparison": "+18% Above Houston Avg",
+    "is_featured": false,
+    "is_urgent": true,
+    "verified_active": true,
+    "appointment_time": "Structured Outpatient Flow",
+    "software_used": [
       "RevolutionEHR"
     ],
     "benefits": [
@@ -164,8 +161,7 @@
       "Current CPR / BLS certification",
       "Commitment to warm, compassionate patient care"
     ],
-    "applyEmail": "hiring@magnoliavision.com",
-    "applyUrl": "https://magnoliavisioncare.com",
-    "postedDate": "2026-10-29T00:16:00.028Z"
+    "apply_email": "hiring@magnoliavision.com",
+    "apply_url": "https://magnoliavisioncare.com"
   }
 ]
