@@ -1,6 +1,6 @@
 [
   {
-    "id": "auto-1793211056910-104",
+    "id": "auto-1793232960027-143",
     "title": "Registered Dental Hygienist Needed",
     "clinicName": "Plano Family Dental Arts",
     "clinicType": "Dental",
@@ -12,8 +12,8 @@
     "minHourly": 48,
     "maxHourly": 54,
     "payPeriod": "hour",
-    "payComparison": "+13% Above Plano Avg",
-    "isFeatured": false,
+    "payComparison": "+19% Above Plano Avg",
+    "isFeatured": true,
     "isUrgent": true,
     "verifiedActive": true,
     "appointmentTime": "60-Min Hygiene Slots",
@@ -40,10 +40,10 @@
     ],
     "applyEmail": "careers@planofamilydental.com",
     "applyUrl": "https://planofamilydentalarts.com",
-    "postedDate": "2026-10-28T18:10:56.910Z"
+    "postedDate": "2026-10-29T00:16:00.028Z"
   },
   {
-    "id": "auto-1793211056910-625",
+    "id": "auto-1793232960028-583",
     "title": "Certified Medical Assistant",
     "clinicName": "Lonestar Sports Medicine & Rehab",
     "clinicType": "Dental",
@@ -55,7 +55,7 @@
     "minHourly": 24,
     "maxHourly": 28,
     "payPeriod": "hour",
-    "payComparison": "+12% Above Austin Avg",
+    "payComparison": "+13% Above Austin Avg",
     "isFeatured": false,
     "isUrgent": true,
     "verifiedActive": true,
@@ -82,10 +82,10 @@
     ],
     "applyEmail": "hiring@lonestarsportsmed.com",
     "applyUrl": "https://lonestarsportsmedicinerehab.com",
-    "postedDate": "2026-10-28T18:10:56.910Z"
+    "postedDate": "2026-10-29T00:16:00.028Z"
   },
   {
-    "id": "auto-1793211056910-224",
+    "id": "auto-1793232960028-706",
     "title": "Aesthetic Nurse / Dermatology MA",
     "clinicName": "South Beach Dermatology & MedSpa",
     "clinicType": "Dermatology & MedSpa",
@@ -97,7 +97,7 @@
     "minHourly": 28,
     "maxHourly": 34,
     "payPeriod": "hour",
-    "payComparison": "+18% Above Miami Avg",
+    "payComparison": "+14% Above Miami Avg",
     "isFeatured": false,
     "isUrgent": true,
     "verifiedActive": true,
@@ -124,6 +124,48 @@
     ],
     "applyEmail": "jobs@southbeachderm.com",
     "applyUrl": "https://southbeachdermatologymedspa.com",
-    "postedDate": "2026-10-28T18:10:56.910Z"
+    "postedDate": "2026-10-29T00:16:00.028Z"
+  },
+  {
+    "id": "auto-1793232960028-44",
+    "title": "Optometric Tech & Frame Stylist",
+    "clinicName": "Magnolia Vision Care",
+    "clinicType": "Dental",
+    "location": "Houston, TX",
+    "city": "Houston",
+    "state": "TX",
+    "zipCode": "75024",
+    "workType": "Full-time",
+    "minHourly": 22,
+    "maxHourly": 26,
+    "payPeriod": "hour",
+    "payComparison": "+16% Above Houston Avg",
+    "isFeatured": false,
+    "isUrgent": true,
+    "verifiedActive": true,
+    "appointmentTime": "Structured Outpatient Flow",
+    "softwareUsed": [
+      "RevolutionEHR"
+    ],
+    "benefits": [
+      "100% Employer Health Insurance",
+      "401(k) Match",
+      "Paid CE Stipend",
+      "PTO & Paid Holidays"
+    ],
+    "description": "Private optometry boutique in Houston Galleria area looking for an Optometric Tech. Pre-test patients with Optos retinal camera and assist optometrist. RevolutionEHR used. Generous eyewear allowance.",
+    "responsibilities": [
+      "Provide exceptional direct patient care in an independent practice setting",
+      "Manage electronic charting and documentation in compliance with HIPAA",
+      "Collaborate with healthcare providers and clinical team members"
+    ],
+    "qualifications": [
+      "Valid state professional credential / certification",
+      "Current CPR / BLS certification",
+      "Commitment to warm, compassionate patient care"
+    ],
+    "applyEmail": "hiring@magnoliavision.com",
+    "applyUrl": "https://magnoliavisioncare.com",
+    "postedDate": "2026-10-29T00:16:00.028Z"
   }
 ]
