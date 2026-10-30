@@ -5,19 +5,19 @@ import Footer from '@/components/Footer';
 import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'ClinicStaffJobs | US Private Healthcare & Dental Direct Hiring Network',
-  description: 'The #1 direct hiring marketplace for US independent dental, medical, optometry, and physical therapy practices. Mandatory wage transparency and zero spam recruiters.',
+  title: 'ClinicStaffJobs | US Dental & Healthcare Clinic Job Board',
+  description: 'Find dental hygienist, dental assistant, medical assistant, physical therapy, optician, and dermatology clinic jobs across all 52 US states. 100% free for job seekers and clinics.',
   keywords: [
     'dental hygienist jobs',
     'medical assistant jobs',
     'dental assistant jobs',
-    'physical therapy aide',
+    'physical therapy assistant jobs',
     'clinic jobs USA',
-    'private practice healthcare hiring'
+    'private practice healthcare jobs'
   ],
   openGraph: {
-    title: 'ClinicStaffJobs | Private Clinic Direct Hiring Network',
-    description: 'Find high-paying dental, medical assistant, and clinic staff jobs with 100% mandatory wage transparency.',
+    title: 'ClinicStaffJobs | US Dental & Healthcare Clinic Job Board',
+    description: 'Search verified dental and medical clinic jobs with clear hourly pay across all 52 US states.',
     url: 'https://clinicstaffjobs.com',
     siteName: 'ClinicStaffJobs',
     type: 'website'

@@ -16,7 +16,9 @@ import {
   FileText,
   UserPlus,
   Upload,
-  Check
+  Check,
+  Building2,
+  PlusCircle
 } from 'lucide-react';
 
 interface DirectApplyBoxProps {
@@ -24,7 +26,7 @@ interface DirectApplyBoxProps {
 }
 
 export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, switchRole } = useAuth();
   const [missingPhone, setMissingPhone] = useState('');
   const [missingLicense, setMissingLicense] = useState('');
   const [missingResume, setMissingResume] = useState('');
@@ -38,6 +40,12 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
     try {
       const savedIds: string[] = JSON.parse(localStorage.getItem('saved_clinic_jobs') || '[]');
       setIsSaved(savedIds.includes(job.id));
+
+      // Check if candidate already applied to this job so we prevent duplicate applications
+      const appliedList = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
+      if (Array.isArray(appliedList) && appliedList.some((a: any) => a.job_id === job.id)) {
+        setIsApplied(true);
+      }
     } catch {
       // ignore
     }
@@ -69,6 +77,8 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
       jobTitle: job.title,
       clinicName: job.clinicName,
       location: job.location,
+      experienceYears: user?.yearsExperience,
+      licenseNumber: user?.licenseNumber || missingLicense.trim(),
     });
     setNote(generated);
     setIsGeneratingNote(false);
@@ -108,7 +118,7 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
       candidate_email: user.email,
       candidate_phone: finalPhone || '(Saved in Profile)',
       license_number: finalLicense,
-      experience_years: user.yearsExperience || '3+ Years',
+      experience_years: user.yearsExperience || '1–3 Years',
       desired_pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
       pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
       resume_file: finalResume,
@@ -140,6 +150,7 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
     try {
       const existing = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
       localStorage.setItem('my_applied_jobs', JSON.stringify([appRecord, ...existing]));
+      window.dispatchEvent(new Event('appliedJobsUpdated'));
     } catch {
       // ignore
     }
@@ -151,17 +162,58 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
   const inputClass =
     'w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium';
 
+  // Role Check: If logged-in user is an Employer (Clinic), show Employer Actions instead of Candidate Apply Form!
+  if (user && user.role === 'employer') {
+    return (
+      <div id="apply-section" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center mx-auto">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <div className="max-w-lg mx-auto space-y-1.5">
+          <h3 className="text-lg font-extrabold text-slate-900">
+            Signed In as an Employer ({user.practiceName || user.name})
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            You are viewing this job opening with your Employer Account. Want to post a similar opening for your clinic or apply as a Job Seeker instead?
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <Link
+            href="/post-a-job"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Post a Similar Job Opening</span>
+          </Link>
+          <Link
+            href="/dashboard/employer"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
+          >
+            <span>Go to My Employer Portal</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => switchRole('candidate')}
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+          >
+            Switch to Job Seeker Mode
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isApplied) {
     return (
-      <div className="bg-white rounded-2xl border-2 border-emerald-500 p-6 sm:p-8 shadow-md space-y-4 text-center">
+      <div id="apply-section" className="bg-white rounded-2xl border-2 border-emerald-500 p-6 sm:p-8 shadow-md space-y-4 text-center">
         <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <h3 className="text-2xl font-extrabold text-slate-900">
-          Application Submitted to {job.clinicName}!
+          ✓ Application Sent to {job.clinicName}!
         </h3>
         <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-          Thank you, <strong className="text-slate-900">{user?.name}</strong>. Your saved profile and CV have been sent for{' '}
+          Your saved profile and CV have been sent for{' '}
           <strong className="text-slate-900">{job.title}</strong> (${job.minHourly}–${job.maxHourly}/hr) and added to your Applied Jobs portal.
         </p>
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -169,12 +221,14 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
             href="/dashboard/candidate"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
           >
-            <span>Track in My Applied Jobs →</span>
+            <span>Track Status in My Applied Jobs →</span>
           </Link>
         </div>
       </div>
     );
   }
+
+  const redirectPath = job.id.startsWith('job-live-') ? `/jobs/view?id=${job.id}` : `/jobs/${job.id}`;
 
   return (
     <div id="apply-section" className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -221,13 +275,13 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
             <Link
-              href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+              href={`/signup?role=candidate&redirect=${encodeURIComponent(redirectPath)}`}
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm shadow-xs transition-all"
             >
               Create Free Job Seeker Account & Apply →
             </Link>
             <Link
-              href={`/login?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+              href={`/login?role=candidate&redirect=${encodeURIComponent(redirectPath)}`}
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition-all"
             >
               Already Have an Account? Sign In
@@ -235,7 +289,7 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
           </div>
         </div>
       ) : (
-        /* Logged-In User -> Uses Saved Profile Automatically, Only Asks for Any Missing Info */
+        /* Logged-In Job Seeker -> Uses Saved Profile Automatically, Only Asks for Any Missing Info */
         <form onSubmit={handleApply} className="p-6 sm:p-8 space-y-5">
           <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3">
@@ -277,10 +331,12 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 {!user.phone && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="apply-missing-phone" className="block text-xs font-bold text-slate-700 mb-1.5">
                       Your Phone Number *
                     </label>
                     <input
+                      id="apply-missing-phone"
+                      name="phone"
                       type="tel"
                       required
                       autoComplete="tel"
@@ -294,12 +350,17 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
 
                 {!user.licenseNumber && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="apply-missing-license" className="block text-xs font-bold text-slate-700 mb-1.5">
                       License / Certificate # (Optional)
                     </label>
                     <input
+                      id="apply-missing-license"
+                      name="licenseNumber"
                       type="text"
-                      placeholder="e.g. Active State License"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      placeholder="e.g. TX-RDH-94821"
                       value={missingLicense}
                       onChange={(e) => setMissingLicense(e.target.value)}
                       className={inputClass}
@@ -310,11 +371,11 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
                 {!user.resumeFileName && (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Upload Your CV / Resume (Saved to your account)
+                      Upload CV / Resume (PDF or DOCX)
                     </label>
-                    <label className="w-full px-4 py-2.5 rounded-xl border border-dashed border-teal-400 bg-white hover:bg-teal-50 text-xs font-bold text-teal-800 flex items-center justify-center gap-2 cursor-pointer">
-                      <Upload className="w-4 h-4 text-teal-600" />
-                      <span>{missingResume ? `Attached: ${missingResume}` : 'Choose CV File (PDF / DOCX)'}</span>
+                    <label className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-dashed border-teal-400 bg-white hover:bg-teal-50 text-teal-900 font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                      <Upload className="w-4 h-4 text-teal-600 shrink-0" />
+                      <span>{missingResume ? `Attached: ${missingResume}` : 'Choose CV File'}</span>
                       <input
                         type="file"
                         accept=".pdf,.doc,.docx"
@@ -331,24 +392,27 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
             </div>
           )}
 
+          {/* Optional Cover Note + Gemini AI Writer */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Message to Hiring Clinic (Optional)
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+              <label htmlFor="apply-note" className="block text-xs font-bold text-slate-700">
+                Short Note to {job.clinicName} (Optional)
               </label>
               <button
                 type="button"
                 onClick={handleGeminiCoverNote}
                 disabled={isGeneratingNote}
-                className="inline-flex items-center gap-1 text-xs font-extrabold text-teal-600 hover:text-teal-800 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold transition-colors cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{isGeneratingNote ? 'Gemini AI Writing...' : '✨ Write Message with Gemini AI'}</span>
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                <span>{isGeneratingNote ? 'Writing...' : '✨ Write Cover Note with Gemini AI'}</span>
               </button>
             </div>
             <textarea
+              id="apply-note"
+              name="coverNote"
               rows={3}
-              placeholder="Click 'Write Message with Gemini AI' above or submit directly..."
+              placeholder="Click 'Write Cover Note with Gemini AI' or submit directly with your saved profile..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className={inputClass}
@@ -363,12 +427,12 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Submitting Application...</span>
+                <span>Sending Application...</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                <span>Submit Application with My Saved Profile →</span>
+                <span>Submit Application with Saved Profile →</span>
               </>
             )}
           </button>

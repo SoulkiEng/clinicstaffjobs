@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { ShieldCheck, Scale, Building2, UserCheck, CheckCircle2, ArrowLeft, BadgeCheck } from 'lucide-react';
 
 export const metadata = {
-  title: 'Terms & Conditions of Service (B2B & B2C) | ClinicStaffJobs.com',
-  description: 'Corporate terms of service governing NPI-verified healthcare practices (B2B) and licensed clinical candidates (B2C) across all 52 US states and territories.'
+  title: 'Terms & Conditions of Service | ClinicStaffJobs.com',
+  description: 'Simple, clear terms of service for healthcare employers and job seekers across all 52 US states.'
 };
 
 export default function TermsPage() {
@@ -16,44 +16,44 @@ export default function TermsPage() {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-700 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to 52-State Job Board</span>
+          <span>Back to All Jobs</span>
         </Link>
 
-        {/* Corporate Header */}
+        {/* Header */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 space-y-4 shadow-xs">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
             <Scale className="w-3.5 h-3.5 text-teal-600" />
-            <span>B2B & B2C Platform Agreement • All 52 US Jurisdictions</span>
+            <span>Platform Terms • All 52 US States</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Terms & Conditions of Service
           </h1>
           <p className="text-sm text-slate-600 leading-relaxed">
-            These Terms & Conditions ("Agreement") govern access to and use of ClinicStaffJobs.com by healthcare employers ("B2B Practices") and clinical job seekers ("B2C Clinicians"). By accessing our platform, posting an opening, or submitting an application, you agree to abide by these professional healthcare marketplace standards.
+            These Terms & Conditions govern the use of ClinicStaffJobs.com by healthcare clinics ("Employers") and healthcare staff ("Job Seekers"). By creating an account, posting a job, or applying to an opening, you agree to these simple community rules.
           </p>
         </div>
 
-        {/* Detailed Governance Sections */}
+        {/* Sections */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 space-y-8 shadow-xs text-sm text-slate-700 leading-relaxed">
           <section className="space-y-3">
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-teal-600" />
-              <span>1. B2B Practice Eligibility & 100% Free Direct Posting Terms</span>
+              <span>1. Free Job Postings for Healthcare Clinics</span>
             </h2>
             <p>
-              ClinicStaffJobs provides 100% free job postings exclusively to legitimate outpatient healthcare practices operating within our five core specialties: <strong>Dental, Family Medicine, Vision / Optometry, Physical Therapy, and Dermatology & MedSpa</strong>.
+              ClinicStaffJobs provides 100% free job postings for healthcare clinics across our five main specialties: <strong>Dental, Family Medicine, Vision / Optical, Physical Therapy, and Dermatology & MedSpa</strong>.
             </p>
             <ul className="space-y-2 pl-2">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Mandatory Wage Transparency:</strong> Every B2B employer must disclose a truthful, good-faith hourly or daily compensation range on every listing, in compliance with state pay transparency laws (including CA, NY, CO, WA, IL, MD, DC, and nationwide best practices).
+                  <strong>Clear Hourly Pay Required:</strong> Every employer must list an honest hourly pay range on every job post so job seekers know what the role pays upfront.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>No Third-Party Staffing Agencies:</strong> Unsolicited third-party recruiting firms may not post blind "lead-capture" ads disguised as private clinics.
+                  <strong>Real Clinic Openings Only:</strong> Third-party staffing agencies may not post fake or unnamed ads pretending to be private clinics.
                 </span>
               </li>
             </ul>
@@ -62,22 +62,22 @@ export default function TermsPage() {
           <section id="verification" className="space-y-3 pt-4 border-t border-slate-100">
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <BadgeCheck className="w-5 h-5 text-emerald-600" />
-              <span>2. NPI & State Board License Verification Standards</span>
+              <span>2. Clinic & License Verification</span>
             </h2>
             <p>
-              To maintain high trust across all 52 US states and territories:
+              To keep our community safe and trustworthy across all 52 states:
             </p>
             <ul className="space-y-2 pl-2">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Practice NPI Verification (B2B):</strong> Practices displaying the "NPI Verified Practice" badge have supplied a 10-digit National Provider Identifier corresponding to an active outpatient practice or licensed healthcare provider.
+                  <strong>Clinic Verification:</strong> Clinics showing the "Verified Clinic" badge have provided their clinic details or 10-digit National Provider Identifier (NPI).
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Clinician Credential Representation (B2C):</strong> Candidates applying for licensed positions (including RDH, RDA, EFDA, CMA, PTA, COA, Licensed Optician, Aesthetician, or DDS/DMD) affirm that they hold or are eligible for an active state license or certification in the state of employment. Practices remain responsible for final primary-source credential verification prior to clinical patient contact.
+                  <strong>Job Seeker Licenses:</strong> Job seekers applying for licensed roles (such as RDH, RDA, CMA, PTA, Optician, or Dentist) confirm they hold or qualify for a valid license in their state. Hiring clinics are responsible for final license checks before a candidate treats patients.
                 </span>
               </li>
             </ul>
@@ -86,31 +86,31 @@ export default function TermsPage() {
           <section id="eeo" className="space-y-3 pt-4 border-t border-slate-100">
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-teal-600" />
-              <span>3. Equal Employment Opportunity (EEO) & Non-Discrimination</span>
+              <span>3. Fair & Equal Hiring</span>
             </h2>
             <p>
-              All B2B practices using ClinicStaffJobs must comply with federal, state, and local Equal Employment Opportunity laws. Job postings may not discriminate on the basis of race, color, religion, sex, pregnancy, national origin, age, disability, veteran status, or genetic information.
+              All clinics using ClinicStaffJobs must follow federal, state, and local Equal Employment Opportunity laws.
             </p>
           </section>
 
           <section className="space-y-3 pt-4 border-t border-slate-100">
             <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-teal-600" />
-              <span>4. Anti-Scraping & Intellectual Property Protection</span>
+              <span>4. No Spam or Automated Scraping</span>
             </h2>
             <p>
-              Automated scraping, harvesting of practice hiring emails, bulk downloading of clinician profiles, or republication of our proprietary 52-State Wage Benchmark data without written authorization is strictly prohibited.
+              Automated scraping, copying clinic emails for spam marketing, or reselling job seeker profiles is strictly prohibited.
             </p>
           </section>
 
           <section className="space-y-3 pt-4 border-t border-slate-100">
             <h2 className="text-lg font-extrabold text-slate-900">
-              5. Legal & Compliance Contact
+              5. Questions & Support
             </h2>
             <p>
-              Questions regarding B2B employer compliance or B2C terms may be directed to{' '}
-              <a href="mailto:compliance@clinicstaffjobs.com" className="text-teal-700 font-bold underline">
-                compliance@clinicstaffjobs.com
+              Have questions about your account or a job post? Email us at{' '}
+              <a href="mailto:support@clinicstaffjobs.com" className="text-teal-700 font-bold underline">
+                support@clinicstaffjobs.com
               </a>.
             </p>
           </section>

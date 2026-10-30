@@ -40,5 +40,15 @@ execSync(`curl.exe -s -T "${phpScript}" -u "${ftpUser}:${ftpPass}" "ftp://${ftpH
 const res = execSync(`curl.exe -s -L -k "https://clinicstaffjobs.com/unzip-core.php"`, { encoding: 'utf-8' });
 console.log('Server response:', res);
 
+// Also upload /jobs/view/index.html so dynamic job-live-* pages work on static export
+const jobViewHtml = path.join(outDir, 'jobs', 'view', 'index.html');
+if (fs.existsSync(jobViewHtml)) {
+  execSync(
+    `curl.exe -s --ftp-create-dirs -T "${jobViewHtml}" -u "${ftpUser}:${ftpPass}" "ftp://${ftpHost}/jobs/view/index.html"`,
+    { stdio: 'inherit' }
+  );
+  console.log('✅ /jobs/view/index.html uploaded');
+}
+
 if (fs.existsSync(coreZip)) fs.unlinkSync(coreZip);
 if (fs.existsSync(phpScript)) fs.unlinkSync(phpScript);

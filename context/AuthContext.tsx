@@ -10,6 +10,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   name: string;
+  password?: string;
   gender?: 'Female' | 'Male' | 'Any';
   // Employer fields
   practiceName?: string;
@@ -26,6 +27,8 @@ export interface UserProfile {
   licenseNumber?: string;
   desiredHourly?: number;
   yearsExperience?: string;
+  workDays?: string;
+  availabilityStatus?: 'open' | 'private';
   skills?: string | string[];
   bio?: string;
   resumeFileName?: string;
@@ -42,12 +45,17 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, role: UserRole, password?: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (
+    email: string,
+    role: UserRole,
+    password?: string
+  ) => Promise<{ ok: boolean; error?: string; role?: UserRole }>;
   signup: (
     profile: Partial<UserProfile> & { email: string; role: UserRole; name: string; password?: string }
-  ) => Promise<{ ok: boolean; error?: string }>;
+  ) => Promise<{ ok: boolean; error?: string; role?: UserRole }>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  switchRole: (nextRole: UserRole) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,22 +80,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (
     email: string,
     role: UserRole,
-    _password?: string
-  ): Promise<{ ok: boolean; error?: string }> => {
+    password?: string
+  ): Promise<{ ok: boolean; error?: string; role?: UserRole }> => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { ok: false, error: 'Please enter a valid email address.' };
     }
 
-    // 1. Check locally registered accounts first so custom fields (CV, bio, notifications) persist
+    // 1. Check locally registered accounts first so custom fields (CV, bio, notifications, role) persist
     try {
       const accountsRaw = localStorage.getItem('clinicstaff_registered_accounts');
       const accounts: Record<string, UserProfile> = accountsRaw ? JSON.parse(accountsRaw) : {};
       if (accounts[cleanEmail]) {
         const found = accounts[cleanEmail];
+        if (found.password && password && found.password !== password) {
+          return {
+            ok: false,
+            error: 'Incorrect password for this account. Please try again or click Forgot Password.',
+          };
+        }
         setUser(found);
         localStorage.setItem('clinicstaff_user', JSON.stringify(found));
-        return { ok: true };
+        return { ok: true, role: found.role };
       }
     } catch {
       // ignore
@@ -103,35 +117,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         const locParts = (data.location || 'Dallas, TX').split(',').map((s: string) => s.trim());
+        const resolvedRole: UserRole = (data.role as UserRole) || role;
         const dbProfile: UserProfile = {
           id: data.id,
           email: data.email,
-          role: (data.role as UserRole) || role,
-          name: data.name || (role === 'employer' ? 'Clinic Hiring Manager' : 'Healthcare Professional'),
+          role: resolvedRole,
+          name: data.name || (resolvedRole === 'employer' ? 'Clinic Hiring Manager' : 'Healthcare Professional'),
           practiceName: data.practice_name || undefined,
           practiceType: data.practice_type || 'Dental',
-          npiNumber: data.license_number || '1487920319',
+          npiNumber: resolvedRole === 'employer' ? data.license_number || '' : undefined,
           location: data.location || 'Dallas, TX',
           city: locParts[0] || 'Dallas',
           stateCode: locParts[1] || 'TX',
-          phone: data.phone || '(214) 555-0192',
+          phone: data.phone || '',
           specialty: data.specialty || 'Registered Dental Hygienist (RDH)',
-          licenseNumber: data.license_number || undefined,
+          licenseNumber: resolvedRole === 'candidate' ? data.license_number || '' : undefined,
           desiredHourly: data.desired_hourly ? Number(data.desired_hourly) : 45,
-          yearsExperience: '4',
+          yearsExperience: '1–3 Years',
+          availabilityStatus: 'open',
           emailAlertsEnabled: true,
           applicationUpdatesEnabled: true,
           directMessagesEnabled: true,
+          notifyEmailJobs: true,
+          notifyApplicationUpdates: true,
+          notifyEmployerMessages: true,
         };
         setUser(dbProfile);
         localStorage.setItem('clinicstaff_user', JSON.stringify(dbProfile));
-        return { ok: true };
+        return { ok: true, role: resolvedRole };
       }
     } catch {
       // Fallback to local profile if offline
     }
 
-    // 3. Create a clean session profile from email
+    // 3. Create a clean session profile from email (without fake license numbers or fake NPIs)
     const emailPrefix = cleanEmail
       .split('@')[0]
       .replace(/[._-]+/g, ' ')
@@ -141,20 +160,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: `usr-${Date.now()}`,
       email: cleanEmail,
       role,
-      name: emailPrefix || (role === 'employer' ? 'Dr. Sarah Mitchell' : 'Jessica Taylor'),
-      gender: 'Female',
+      password,
+      name: emailPrefix || (role === 'employer' ? 'Clinic Hiring Manager' : 'Job Seeker'),
+      gender: 'Any',
       practiceName: role === 'employer' ? `${emailPrefix} Clinic` : undefined,
       practiceType: role === 'employer' ? 'Dental' : undefined,
-      npiNumber: role === 'employer' ? '1487920319' : undefined,
+      npiNumber: '',
       location: 'Dallas, TX',
       city: 'Dallas',
       stateCode: 'TX',
       zipCode: '75225',
-      phone: '(214) 555-0192',
+      phone: '',
       specialty: role === 'candidate' ? 'Registered Dental Hygienist (RDH)' : undefined,
-      desiredHourly: role === 'candidate' ? 48 : undefined,
-      yearsExperience: '4',
-      licenseNumber: role === 'candidate' ? 'TX-RDH-94821' : undefined,
+      desiredHourly: role === 'candidate' ? 45 : undefined,
+      yearsExperience: '1–3 Years',
+      licenseNumber: '',
+      availabilityStatus: 'open',
+      workDays: 'Mon–Fri (Flexible)',
       bio:
         role === 'candidate'
           ? 'Dedicated healthcare professional focused on patient comfort, accurate digital charting, and teamwork.'
@@ -164,20 +186,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? 'Patient Care, Digital Charting, Sterilization, Friendly Communication'
           : undefined,
       resumeFileName: role === 'candidate' ? `${emailPrefix.replace(/\s+/g, '_')}_CV.pdf` : undefined,
-      resumeUpdatedAt: 'Updated Today',
+      resumeUpdatedAt: 'Saved in Profile',
       emailAlertsEnabled: true,
       applicationUpdatesEnabled: true,
       directMessagesEnabled: true,
+      notifyEmailJobs: true,
+      notifyApplicationUpdates: true,
+      notifyEmployerMessages: true,
     };
+
+    try {
+      const accountsRaw = localStorage.getItem('clinicstaff_registered_accounts');
+      const accounts: Record<string, UserProfile> = accountsRaw ? JSON.parse(accountsRaw) : {};
+      accounts[cleanEmail] = defaultProfile;
+      localStorage.setItem('clinicstaff_registered_accounts', JSON.stringify(accounts));
+    } catch {
+      // ignore
+    }
 
     setUser(defaultProfile);
     localStorage.setItem('clinicstaff_user', JSON.stringify(defaultProfile));
-    return { ok: true };
+    return { ok: true, role };
   };
 
   const signup = async (
     profile: Partial<UserProfile> & { email: string; role: UserRole; name: string; password?: string }
-  ): Promise<{ ok: boolean; error?: string }> => {
+  ): Promise<{ ok: boolean; error?: string; role?: UserRole }> => {
     const cleanEmail = profile.email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { ok: false, error: 'Please enter a valid email address.' };
@@ -191,16 +225,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       city: profile.city || locParts[0] || 'Dallas',
       stateCode: profile.stateCode || locParts[1] || 'TX',
       zipCode: profile.zipCode || '75225',
-      yearsExperience: profile.yearsExperience || '3',
-      desiredHourly: profile.desiredHourly || 42,
+      yearsExperience: profile.yearsExperience || '1–3 Years',
+      desiredHourly: profile.desiredHourly || 45,
+      availabilityStatus: 'open',
+      workDays: profile.workDays || 'Mon–Fri (Flexible)',
       resumeFileName:
         profile.role === 'candidate'
-          ? `${profile.name.trim().replace(/\s+/g, '_')}_Resume.pdf`
+          ? profile.resumeFileName || `${profile.name.trim().replace(/\s+/g, '_')}_Resume.pdf`
           : undefined,
       resumeUpdatedAt: 'Uploaded Today',
       emailAlertsEnabled: true,
       applicationUpdatesEnabled: true,
       directMessagesEnabled: true,
+      notifyEmailJobs: true,
+      notifyApplicationUpdates: true,
+      notifyEmployerMessages: true,
       ...profile,
       email: cleanEmail,
       location: profile.location || `${profile.city || 'Dallas'}, ${profile.stateCode || 'TX'}`,
@@ -240,12 +279,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newProfile);
     localStorage.setItem('clinicstaff_user', JSON.stringify(newProfile));
-    return { ok: true };
+    return { ok: true, role: newProfile.role };
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('clinicstaff_user');
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/dashboard') || path.startsWith('/post-a-job')) {
+        window.location.href = '/login';
+      }
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
@@ -290,8 +335,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const switchRole = async (nextRole: UserRole) => {
+    if (!user) return;
+    await updateProfile({
+      role: nextRole,
+      practiceName: nextRole === 'employer' ? user.practiceName || `${user.name} Clinic` : user.practiceName,
+      practiceType: nextRole === 'employer' ? user.practiceType || 'Dental' : user.practiceType,
+      specialty:
+        nextRole === 'candidate'
+          ? user.specialty || 'Registered Dental Hygienist (RDH)'
+          : user.specialty,
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, updateProfile, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

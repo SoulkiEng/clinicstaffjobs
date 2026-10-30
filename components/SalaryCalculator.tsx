@@ -3,13 +3,27 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { SALARY_BENCHMARKS } from '@/data/jobs';
-import { Calculator, ArrowRight, TrendingUp, CheckCircle, Flame, ShieldAlert } from 'lucide-react';
+import { generateSalaryNegotiationWithGemini } from '@/lib/gemini';
+import {
+  Calculator,
+  ArrowRight,
+  CheckCircle,
+  Flame,
+  ShieldAlert,
+  Sparkles,
+  Loader2,
+  Copy,
+  Check
+} from 'lucide-react';
 
 export default function SalaryCalculator() {
   const [selectedRole, setSelectedRole] = useState(SALARY_BENCHMARKS[0].role);
   const [selectedCity, setSelectedCity] = useState(SALARY_BENCHMARKS[0].cities[0].city);
   const [experience, setExperience] = useState<'entry' | 'mid' | 'senior'>('mid');
-  const [currentWage, setCurrentWage] = useState<number | ''>('');
+  const [currentWage, setCurrentWage] = useState<string>('');
+  const [negotiationScript, setNegotiationScript] = useState<string>('');
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
 
   const currentRoleData = SALARY_BENCHMARKS.find((r) => r.role === selectedRole) || SALARY_BENCHMARKS[0];
   const cityData = currentRoleData.cities.find((c) => c.city === selectedCity) || currentRoleData.cities[0];
@@ -19,35 +33,85 @@ export default function SalaryCalculator() {
   const estimatedAvg = Math.round(cityData.avg * expMultiplier);
   const estimatedHigh = Math.round(cityData.high * expMultiplier);
 
-  const wageDifference = currentWage ? Math.round(((Number(currentWage) - estimatedAvg) / estimatedAvg) * 100) : null;
+  const numericCurrentWage = Number(currentWage);
+  const wageDifference =
+    currentWage && !isNaN(numericCurrentWage) && numericCurrentWage > 0
+      ? Math.round(((numericCurrentWage - estimatedAvg) / estimatedAvg) * 100)
+      : null;
+
+  // Clean search query & state code so homepage filter works seamlessly
+  const cleanRoleKeyword = selectedRole.includes('Hygienist')
+    ? 'Hygienist'
+    : selectedRole.includes('Dental Assistant')
+    ? 'Dental Assistant'
+    : selectedRole.includes('Medical Assistant')
+    ? 'Medical Assistant'
+    : selectedRole.includes('Physical Therapy')
+    ? 'Physical Therap'
+    : selectedRole.includes('Optician')
+    ? 'Opt'
+    : selectedRole.includes('Dermatology')
+    ? 'Dermatology'
+    : selectedRole.includes('Coordinator')
+    ? 'Coordinator'
+    : selectedRole.split('(')[0].trim();
+
+  const parsedStateCode = selectedCity.split(',')[1]?.trim() || '';
+
+  const handleGenerateNegotiationScript = () => {
+    setIsGeneratingScript(true);
+    try {
+      const script = generateSalaryNegotiationWithGemini({
+        role: selectedRole,
+        city: selectedCity,
+        currentPay: numericCurrentWage > 0 ? numericCurrentWage : undefined,
+        marketAvg: estimatedAvg,
+        marketHigh: estimatedHigh,
+      });
+      setNegotiationScript(script);
+    } finally {
+      setIsGeneratingScript(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 sm:p-8">
       <div className="flex items-center gap-2.5 text-teal-700 font-semibold text-sm mb-2">
         <Calculator className="w-5 h-5 text-teal-600" />
-        <span>Free Private Practice Wage Benchmark</span>
+        <span>Free Clinic Hourly Pay Calculator</span>
       </div>
 
       <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
         Am I Getting Underpaid?
       </h2>
       <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-        Check current going rates for private dental, medical, and outpatient clinic staff in your metro area based on live verified postings.
+        Check current hourly pay rates for dental, medical, vision, physical therapy, and dermatology clinic staff in your city—and use Gemini AI to write a polite pay raise script.
       </p>
 
-      {/* Inputs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+      {/* Aligned 2-Column Inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 items-end">
         {/* Role select */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-            Your Healthcare Role
+          <label
+            htmlFor="calc-role"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
+            Your Job Role
           </label>
           <select
+            id="calc-role"
+            name="selectedRole"
             value={selectedRole}
             onChange={(e) => {
-              setSelectedRole(e.target.value);
+              const nextRole = e.target.value;
+              setSelectedRole(nextRole);
+              const nextRoleObj = SALARY_BENCHMARKS.find((r) => r.role === nextRole);
+              if (nextRoleObj && !nextRoleObj.cities.some((c) => c.city === selectedCity)) {
+                setSelectedCity(nextRoleObj.cities[0].city);
+              }
+              setNegotiationScript('');
             }}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium"
           >
             {SALARY_BENCHMARKS.map((item) => (
               <option key={item.role} value={item.role}>
@@ -59,17 +123,25 @@ export default function SalaryCalculator() {
 
         {/* City select */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-            Metro Area
+          <label
+            htmlFor="calc-city"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
+            City / Metro Area
           </label>
           <select
+            id="calc-city"
+            name="selectedCity"
             value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            onChange={(e) => {
+              setSelectedCity(e.target.value);
+              setNegotiationScript('');
+            }}
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium"
           >
             {currentRoleData.cities.map((c) => (
               <option key={c.city} value={c.city}>
-                {c.city} ({c.count} openings)
+                {c.city} ({c.count} open jobs)
               </option>
             ))}
           </select>
@@ -77,113 +149,189 @@ export default function SalaryCalculator() {
 
         {/* Experience level */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label
+            htmlFor="calc-exp"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
             Years of Experience
           </label>
           <select
+            id="calc-exp"
+            name="experience"
             value={experience}
-            onChange={(e) => setExperience(e.target.value as any)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            onChange={(e) => {
+              setExperience(e.target.value as any);
+              setNegotiationScript('');
+            }}
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium"
           >
-            <option value="entry">Entry (0-2 years)</option>
-            <option value="mid">Mid-Level (3-5 years)</option>
-            <option value="senior">Experienced (6+ years)</option>
+            <option value="entry">Entry Level (0–2 years)</option>
+            <option value="mid">Mid-Level (3–5 years)</option>
+            <option value="senior">Senior / Lead (6+ years)</option>
           </select>
         </div>
-      </div>
 
-      {/* Optional: Current Wage Input for Underpaid Test */}
-      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <label className="text-xs font-medium text-slate-600">
-          (Optional) Enter what you currently make per hour to see how you rank:
-        </label>
-        <div className="relative w-40">
-          <span className="absolute left-3 top-2 text-sm text-slate-400 font-bold">$</span>
-          <input
-            type="number"
-            placeholder="e.g. 40"
-            value={currentWage}
-            onChange={(e) => setCurrentWage(e.target.value ? Number(e.target.value) : '')}
-            className="w-full pl-7 pr-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
-          />
+        {/* Optional: Current Wage Input for Underpaid Test */}
+        <div>
+          <label
+            htmlFor="calc-current-wage"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
+            Your Current Hourly Pay (Optional)
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-2.5 text-sm text-slate-400 font-bold">$</span>
+            <input
+              id="calc-current-wage"
+              name="currentWage"
+              type="text"
+              inputMode="numeric"
+              placeholder={`e.g. ${estimatedAvg - 3}`}
+              value={currentWage}
+              onChange={(e) => setCurrentWage(e.target.value.replace(/[^\d.]/g, ''))}
+              className="w-full pl-8 pr-12 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-500 focus:outline-none font-medium"
+            />
+            <span className="absolute right-3.5 top-2.5 text-xs text-slate-400 font-semibold">/hr</span>
+          </div>
         </div>
       </div>
 
       {/* Results Display Box */}
-      <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200/90 p-5 sm:p-6">
+      <div className="mt-6 rounded-2xl bg-slate-50 border border-slate-200/90 p-5 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           {/* Average */}
           <div className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              City Market Average
+              City Average Pay
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-extrabold text-slate-900">${estimatedAvg}</span>
               <span className="text-sm font-semibold text-slate-600">/hr</span>
             </div>
-            <p className="text-xs text-slate-600">Standard for {selectedCity}</p>
+            <p className="text-xs text-slate-600">Standard rate in {selectedCity}</p>
           </div>
 
           {/* Top 10% */}
           <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-6">
             <span className="text-xs font-semibold uppercase tracking-wider text-teal-800 flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-amber-500" /> Top Paying Private Clinics
+              <Flame className="w-3.5 h-3.5 text-amber-500" /> Top Paying Clinics
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-extrabold text-teal-700">${estimatedHigh}</span>
               <span className="text-sm font-semibold text-slate-600">/hr</span>
             </div>
-            <p className="text-xs text-slate-600">Upper 10th percentile rates</p>
+            <p className="text-xs text-slate-600">Top 10% clinics in {selectedCity}</p>
           </div>
 
           {/* Verdict Box */}
           <div className="border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-6">
-            {currentWage ? (
-              wageDifference !== null && wageDifference < 0 ? (
+            {wageDifference !== null ? (
+              wageDifference < 0 ? (
                 <div className="space-y-1 text-rose-700">
                   <div className="flex items-center gap-1 font-bold text-sm">
                     <ShieldAlert className="w-4 h-4 text-rose-600" />
                     <span>Underpaid by {Math.abs(wageDifference)}%!</span>
                   </div>
                   <p className="text-xs text-slate-600">
-                    You are earning below the ${estimatedAvg}/hr market average for {selectedRole} in {selectedCity}.
+                    You earn below the ${estimatedAvg}/hr average for {selectedRole} in {selectedCity}.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1 text-emerald-800">
                   <div className="flex items-center gap-1 font-bold text-sm">
                     <CheckCircle className="w-4 h-4 text-emerald-700" />
-                    <span>Competitive Pay!</span>
+                    <span>Strong Hourly Rate!</span>
                   </div>
                   <p className="text-xs text-slate-600">
-                    Your wage is in line with or higher than the market rate in {selectedCity}.
+                    Your pay matches or beats the ${estimatedAvg}/hr average in {selectedCity}.
                   </p>
                 </div>
               )
             ) : (
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-slate-500">Active Demand</span>
+                <span className="text-xs font-semibold text-slate-500">Hiring Demand</span>
                 <p className="text-xs text-slate-700 leading-relaxed">
-                  Private practices in <span className="font-semibold text-slate-900">{selectedCity}</span> are offering up to <span className="font-bold text-teal-700">${estimatedHigh}/hr</span> with sign-on bonuses.
+                  Private clinics in <span className="font-semibold text-slate-900">{selectedCity}</span> are paying up to{' '}
+                  <span className="font-bold text-teal-700">${estimatedHigh}/hr</span> right now.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Action button */}
+        {/* Action buttons: Gemini AI Negotiation Script + Browse Matching Jobs */}
         <div className="mt-5 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">
-            Data verified from {cityData.count} active private clinic hiring posts this week.
-          </p>
-          <Link
-            href={`/?role=${encodeURIComponent(selectedRole)}&location=${encodeURIComponent(selectedCity)}`}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-sm transition-all"
+          <button
+            type="button"
+            onClick={handleGenerateNegotiationScript}
+            disabled={isGeneratingScript}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 font-bold text-xs transition-all cursor-pointer"
           >
-            <span>Browse {selectedRole} Openings</span>
+            {isGeneratingScript ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                <span>Gemini AI Writing Script...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                <span>✨ Write My Pay Raise Script with Gemini AI</span>
+              </>
+            )}
+          </button>
+
+          <Link
+            href={`/?q=${encodeURIComponent(cleanRoleKeyword)}${
+              parsedStateCode ? `&state=${encodeURIComponent(parsedStateCode)}` : ''
+            }`}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-all"
+          >
+            <span>Browse {selectedRole.split('(')[0].trim()} Jobs</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
+
+        {/* Gemini AI Negotiation Script Output */}
+        {negotiationScript && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 p-4 rounded-xl bg-white border border-teal-200 space-y-2.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-teal-800">
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                <span>Gemini AI Pay Raise & Interview Negotiation Script (${estimatedHigh}/hr Target)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(negotiationScript).catch(() => {});
+                  }
+                  setCopiedScript(true);
+                  setTimeout(() => setCopiedScript(false), 2000);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer"
+              >
+                {copiedScript ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span className="text-emerald-700">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Script</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <pre className="text-xs text-slate-700 whitespace-pre-wrap font-sans leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200/80">
+              {negotiationScript}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { ALL_JOBS, US_STATES_52, Job } from '@/data/jobs';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import JobCard, { getJobGenderPref, getJobExperienceLevel } from '@/components/JobCard';
 import SalaryCalculator from '@/components/SalaryCalculator';
 import {
@@ -28,7 +29,10 @@ import {
   Check,
   Clock,
   Users,
-  Briefcase
+  Briefcase,
+  Sparkles,
+  UserCheck,
+  Building2
 } from 'lucide-react';
 
 function mapDbJob(raw: any, idx = 0): Job & { genderPref?: string; experienceLevel?: string; status?: string } {
@@ -99,6 +103,7 @@ const BENEFIT_OPTIONS = [
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>(ALL_JOBS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -116,7 +121,6 @@ export default function HomePage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [tickerPaused, setTickerPaused] = useState(false);
 
   const pageSize = 20;
   const categories = ['All', 'Dental', 'Family Medicine', 'Vision', 'Physical Therapy', 'Dermatology & MedSpa'];
@@ -173,25 +177,23 @@ export default function HomePage() {
     },
   ];
 
-  const RECENT_HIRING_UPDATES = [
-    '🟢 Preston Hollow Dental (Dallas, TX) posted Dental Hygienist ($56/hr) • 2 mins ago',
-    '⚡ Jessica M. applied in 1 click to Camelback Smiles (Phoenix, AZ) • 4 mins ago',
-    '🟢 Buckhead Dermatology & MedSpa (Atlanta, GA) posted Medical Assistant ($31/hr) • 7 mins ago',
-    '🔥 19 job seekers viewing Brickell Vision & Optical (Miami, FL) • Just now',
-    '🟢 Pacific Coast Physical Therapy (San Diego, CA) hired Physical Therapist Assistant • 11 mins ago',
-    '⚡ Marcus T. saved Cherry Creek Family Practice (Denver, CO) • 14 mins ago',
-  ];
-
-  // Read URL params (?state=TX or ?specialty=Dental) on mount
+  // Read URL params (?state=TX, ?specialty=Dental, ?q=..., ?role=..., ?location=...) on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const st = params.get('state');
       const spec = params.get('specialty') || params.get('category');
       const mp = params.get('minPay');
-      const q = params.get('q');
+      const q = params.get('q') || params.get('role');
+      const loc = params.get('location');
+
       if (st && US_STATES_52.some((s) => s.code === st.toUpperCase())) {
         setSelectedState(st.toUpperCase());
+      } else if (loc && loc.includes(',')) {
+        const parsedSt = loc.split(',')[1]?.trim().toUpperCase();
+        if (parsedSt && US_STATES_52.some((s) => s.code === parsedSt)) {
+          setSelectedState(parsedSt);
+        }
       }
       if (spec && categories.includes(spec)) {
         setSelectedCategory(spec);
@@ -200,7 +202,8 @@ export default function HomePage() {
         setMinPay(Number(mp));
       }
       if (q) {
-        setSearchTerm(q);
+        const cleanQ = q.includes('(') ? q.split('(')[0].trim() : q;
+        setSearchTerm(cleanQ);
       }
     }
   }, []);
@@ -455,6 +458,27 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
+  const applyMyCandidateProfileFilters = () => {
+    if (!user || user.role !== 'candidate') return;
+    if (user.stateCode) {
+      setSelectedState(user.stateCode);
+      setSelectedLocation('All');
+    }
+    if (user.specialty) {
+      const spec = user.specialty.toLowerCase();
+      if (spec.includes('hygienist')) setSearchTerm('Hygienist');
+      else if (spec.includes('dental assistant')) setSearchTerm('Dental Assistant');
+      else if (spec.includes('medical assistant')) setSearchTerm('Medical Assistant');
+      else if (spec.includes('physical')) setSearchTerm('Physical Therap');
+      else if (spec.includes('opt')) setSearchTerm('Opt');
+      else if (spec.includes('derm')) setSearchTerm('Dermatology');
+    }
+    if (user.desiredHourly && user.desiredHourly > 0) {
+      setMinPay(Math.max(0, user.desiredHourly - 4));
+    }
+    setCurrentPage(1);
+  };
+
   const hasActiveFilters =
     selectedCategory !== 'All' ||
     selectedState !== 'All' ||
@@ -469,43 +493,71 @@ export default function HomePage() {
     minPay > 0 ||
     onlySaved;
 
+  const postJobHref = user
+    ? '/post-a-job'
+    : '/signup?role=employer&redirect=/post-a-job';
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Top Hiring Updates Bar */}
-      <div className="bg-slate-950 text-white py-2 px-4 text-xs font-medium border-b border-slate-800 overflow-hidden relative">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 shrink-0 z-10 bg-slate-950 pr-3 border-r border-slate-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="font-extrabold text-emerald-400 tracking-wide uppercase text-[11px] whitespace-nowrap">
-              Recent Activity
-            </span>
-          </div>
-
-          <div className="overflow-hidden flex-1">
-            <div
-              className="live-ticker-track gap-8 items-center"
-              style={tickerPaused ? { animationPlayState: 'paused' } : undefined}
-            >
-              {[...RECENT_HIRING_UPDATES, ...RECENT_HIRING_UPDATES].map((item, idx) => (
-                <span key={idx} className="text-slate-300 whitespace-nowrap text-xs font-medium">
-                  {item}
-                </span>
-              ))}
+      {/* Top Personalized / Platform Trust Bar (No Fake Activity Ticker) */}
+      <div className="bg-slate-950 text-white py-2 px-4 text-xs font-medium border-b border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          {user?.role === 'candidate' ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-extrabold text-[11px]">
+                <Sparkles className="w-3 h-3" /> Matched For {user.name}
+              </span>
+              <span className="text-slate-300">
+                Role: <strong className="text-white">{user.specialty || 'Healthcare Professional'}</strong> •{' '}
+                Location: <strong className="text-white">{user.location || user.stateCode || 'All States'}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={applyMyCandidateProfileFilters}
+                className="px-2.5 py-0.5 rounded-md bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] cursor-pointer transition-colors"
+              >
+                Show Jobs Matching My Profile →
+              </button>
             </div>
-          </div>
+          ) : user?.role === 'employer' ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-extrabold text-[11px]">
+                <Building2 className="w-3 h-3" /> {user.practiceName || 'Employer Account'}
+              </span>
+              <span className="text-slate-300">
+                Your clinic details are saved. Manage active & paused jobs or invite candidates in 1 click.
+              </span>
+              <Link
+                href="/dashboard/employer"
+                className="text-teal-300 hover:text-white font-bold underline"
+              >
+                Open Employer Portal →
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 flex-wrap text-slate-300">
+              <span className="inline-flex items-center gap-1.5 font-bold text-emerald-400">
+                <BadgeCheck className="w-3.5 h-3.5" /> 100% Free for Job Seekers & Clinics
+              </span>
+              <span className="hidden sm:inline text-slate-600">•</span>
+              <span className="hidden sm:inline">
+                Save your CV or Clinic info once — apply or post jobs in 1 click across all 52 states
+              </span>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2 shrink-0 z-10 bg-slate-950 pl-3 border-l border-slate-800">
-            <button
-              type="button"
-              onClick={() => setTickerPaused(!tickerPaused)}
-              className="text-[11px] font-bold text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-800 hover:border-slate-700 cursor-pointer whitespace-nowrap"
-              aria-label={tickerPaused ? 'Resume recent activity ticker' : 'Pause recent activity ticker'}
-            >
-              {tickerPaused ? '▶ Play' : '⏸ Pause'}
-            </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {!user && (
+              <Link
+                href="/signup?role=candidate"
+                className="text-slate-300 hover:text-white font-semibold whitespace-nowrap"
+              >
+                Save My CV (Free)
+              </Link>
+            )}
             <Link
-              href="/post-a-job"
-              className="hidden sm:inline-flex items-center gap-1 text-teal-300 hover:text-white font-bold whitespace-nowrap"
+              href={postJobHref}
+              className="inline-flex items-center gap-1 text-teal-300 hover:text-white font-bold whitespace-nowrap"
             >
               <span>+ Post Free Job</span>
             </Link>
@@ -623,14 +675,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Search Bar Box (Aligned 4-Column Responsive Grid) */}
+          {/* Search Bar Box (Aligned Responsive Grid) */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-xs">
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
               {/* Keyword Input (4 cols) */}
               <div className="sm:col-span-4 relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
+                  id="search-keyword"
+                  name="q"
                   type="text"
+                  aria-label="Search by job title, software, or clinic"
                   placeholder="Job title (RDH, CMA, RDA), software, or clinic..."
                   value={searchTerm}
                   autoCorrect="off"
@@ -661,6 +716,8 @@ export default function HomePage() {
               <div className="sm:col-span-3 relative">
                 <Globe className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <select
+                  id="search-state"
+                  name="state"
                   aria-label="Select US State"
                   value={selectedState}
                   onChange={(e) => {
@@ -683,6 +740,8 @@ export default function HomePage() {
               <div className="sm:col-span-3 relative">
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <select
+                  id="search-city"
+                  name="location"
                   aria-label="Select City"
                   value={selectedLocation}
                   onChange={(e) => {
@@ -709,6 +768,8 @@ export default function HomePage() {
               {/* Minimum Hourly Rate (2 cols) */}
               <div className="sm:col-span-2">
                 <select
+                  id="search-minpay"
+                  name="minPay"
                   aria-label="Minimum Hourly Pay"
                   value={minPay}
                   onChange={(e) => {
@@ -965,6 +1026,7 @@ export default function HomePage() {
                 </label>
                 <select
                   id="software-filter"
+                  name="software"
                   value={selectedSoftware}
                   onChange={(e) => {
                     setSelectedSoftware(e.target.value);
@@ -991,6 +1053,7 @@ export default function HomePage() {
                 </label>
                 <select
                   id="benefits-filter"
+                  name="benefit"
                   value={selectedBenefit}
                   onChange={(e) => {
                     setSelectedBenefit(e.target.value);
@@ -1017,6 +1080,7 @@ export default function HomePage() {
                 </label>
                 <select
                   id="date-posted-filter"
+                  name="postedWithinDays"
                   value={postedWithinDays}
                   onChange={(e) => {
                     setPostedWithinDays(Number(e.target.value));
@@ -1046,7 +1110,7 @@ export default function HomePage() {
                 Post unlimited jobs across all 52 states at $0 cost and manage all your active and closed jobs from your Employer Portal.
               </p>
               <Link
-                href="/post-a-job"
+                href={postJobHref}
                 className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
@@ -1115,6 +1179,7 @@ export default function HomePage() {
                   </label>
                   <select
                     id="sort-jobs-select"
+                    name="sortBy"
                     value={sortBy}
                     onChange={(e) => {
                       setSortBy(e.target.value as any);
@@ -1130,10 +1195,20 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Active Filter Pills Bar (if any filter is active) */}
+            {/* Active Filter Pills Bar (All Active Filters Shown Clearly) */}
             {hasActiveFilters && (
               <div className="flex items-center gap-2 flex-wrap px-1">
                 <span className="text-xs font-bold text-slate-500">Active Filters:</span>
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-xs font-bold cursor-pointer"
+                  >
+                    <span>Keyword: {searchTerm}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
                 {selectedGenderPref !== 'All' && (
                   <button
                     type="button"
@@ -1177,6 +1252,83 @@ export default function HomePage() {
                     <X className="w-3 h-3" />
                   </button>
                 )}
+                {selectedLocation !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLocation('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  >
+                    <span>City: {selectedLocation}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedWorkType !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWorkType('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Schedule: {selectedWorkType}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedSoftware !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSoftware('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-900 border border-cyan-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Software: {selectedSoftware}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedBenefit !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBenefit('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Benefit: {selectedBenefit}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {minPay > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setMinPay(0)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>${minPay}+/hr</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {postedWithinDays > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPostedWithinDays(0)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Past {postedWithinDays}d</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {onlySaved && (
+                  <button
+                    type="button"
+                    onClick={() => setOnlySaved(false)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-900 border border-teal-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Saved Jobs Only</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="text-xs font-bold text-rose-600 hover:underline ml-1 cursor-pointer"
+                >
+                  Clear All
+                </button>
               </div>
             )}
 
@@ -1356,6 +1508,7 @@ export default function HomePage() {
                     window.dispatchEvent(new Event('compareJobsUpdated'));
                   }}
                   className="text-slate-400 hover:text-white cursor-pointer"
+                  aria-label={`Remove ${cj.clinicName} from comparison`}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1408,83 +1561,89 @@ export default function HomePage() {
                 type="button"
                 onClick={() => setShowCompareModal(false)}
                 className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                aria-label="Close comparison dialog"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {comparedJobs.map((cj) => (
-                <div
-                  key={cj.id}
-                  className="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/60 flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                        {cj.clinicType}
-                      </span>
-                      <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                        <BadgeCheck className="w-3.5 h-3.5" /> Verified Clinic
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-base font-extrabold text-slate-900">{cj.title}</h4>
-                      <p className="text-xs font-bold text-slate-600 mt-0.5">
-                        {cj.clinicName} • {cj.location}
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white border border-slate-200">
-                      <div className="text-xs text-slate-500 font-semibold">Hourly Pay</div>
-                      <div className="text-xl font-black text-slate-900">
-                        ${cj.minHourly} – ${cj.maxHourly}
-                        <span className="text-xs font-bold text-slate-500">/hr</span>
+              {comparedJobs.map((cj) => {
+                const detailHref = cj.id.startsWith('job-live-')
+                  ? `/jobs/view?id=${encodeURIComponent(cj.id)}`
+                  : `/jobs/${cj.id}`;
+                return (
+                  <div
+                    key={cj.id}
+                    className="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/60 flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                          {cj.clinicType}
+                        </span>
+                        <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                          <BadgeCheck className="w-3.5 h-3.5" /> Verified Clinic
+                        </span>
                       </div>
-                      <div className="text-[11px] font-bold text-emerald-700 mt-0.5">{cj.payComparison}</div>
-                    </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-start gap-2">
-                        <Clock className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold text-slate-900 block">Patient Schedule:</span>
-                          <span className="text-slate-600">{cj.appointmentTime || 'Standard Unrushed Schedule'}</span>
+                      <div>
+                        <h4 className="text-base font-extrabold text-slate-900">{cj.title}</h4>
+                        <p className="text-xs font-bold text-slate-600 mt-0.5">
+                          {cj.clinicName} • {cj.location}
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-white border border-slate-200">
+                        <div className="text-xs text-slate-500 font-semibold">Hourly Pay</div>
+                        <div className="text-xl font-black text-slate-900">
+                          ${cj.minHourly} – ${cj.maxHourly}
+                          <span className="text-xs font-bold text-slate-500">/hr</span>
                         </div>
+                        <div className="text-[11px] font-bold text-emerald-700 mt-0.5">{cj.payComparison}</div>
                       </div>
 
-                      <div className="flex items-start gap-2">
-                        <Laptop className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold text-slate-900 block">Clinic Software:</span>
-                          <span className="text-slate-600">{cj.softwareUsed.join(', ')}</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1 pt-1">
-                        <span className="font-bold text-slate-900 block">Benefits:</span>
-                        {cj.benefits.map((b, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-slate-600">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>{b}</span>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-slate-900 block">Patient Schedule:</span>
+                            <span className="text-slate-600">{cj.appointmentTime || 'Standard Unrushed Schedule'}</span>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="flex items-start gap-2">
+                          <Laptop className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-slate-900 block">Clinic Software:</span>
+                            <span className="text-slate-600">{cj.softwareUsed.join(', ')}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 pt-1">
+                          <span className="font-bold text-slate-900 block">Benefits:</span>
+                          {cj.benefits.map((b, i) => (
+                            <div key={i} className="flex items-center gap-1.5 text-slate-600">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>{b}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pt-4 border-t border-slate-200 flex gap-2">
-                    <Link
-                      href={`/jobs/${cj.id}`}
-                      onClick={() => setShowCompareModal(false)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs text-center transition-colors"
-                    >
-                      View & Apply →
-                    </Link>
+                    <div className="pt-4 border-t border-slate-200 flex gap-2">
+                      <Link
+                        href={detailHref}
+                        onClick={() => setShowCompareModal(false)}
+                        className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs text-center transition-colors"
+                      >
+                        View & Apply →
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

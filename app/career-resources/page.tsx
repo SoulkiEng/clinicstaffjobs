@@ -1,72 +1,71 @@
 import React from 'react';
 import Link from 'next/link';
 import { US_STATES_52 } from '@/data/jobs';
+import GeminiCareerCoach from '@/components/GeminiCareerCoach';
 import {
   BookOpen,
-  Award,
   DollarSign,
   ShieldCheck,
   CheckCircle2,
   ArrowRight,
-  Stethoscope,
   BadgeCheck,
-  FileText
+  UserPlus
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'Clinician Career, 52-State Licensing & Salary Negotiation Hub (B2C) | ClinicStaffJobs',
-  description: 'Comprehensive career guides, state licensing board directory across all 52 US states, and private practice hourly pay negotiation strategies for RDH, RDA, CMA, PTA, and Opticians.'
+  title: 'Healthcare Career, State License & Pay Advice | ClinicStaffJobs',
+  description: 'Simple career guides, state license transfer help across all 52 US states, and hourly pay advice for Dental Hygienists, Dental Assistants, Medical Assistants, PTAs, and Opticians.'
 };
 
-export default function CareerResourcesB2CPage() {
+export default function CareerResourcesPage() {
   const specialtyGuides = [
     {
-      specialty: 'Dental (RDH, RDA, EFDA, DDS)',
-      title: '2026 Private Dental Practice Career & Pay Guide',
+      specialty: 'Dental Clinics (RDH, RDA, EFDA, DDS)',
+      title: 'Dental Clinic Career & Hourly Pay Guide',
       points: [
-        'Why 60-minute adult prophy slots and Assisted Hygiene reduce RDH musculoskeletal burnout by 62%',
-        'Expanded Functions (EFDA), Nitrous Oxide, and Local Anesthesia certifications that add +$3 to +$6/hr',
-        'How to evaluate private fee-for-service vs. corporate DSO benefits packages'
+        'Why 60-minute hygiene appointments and assisted hygiene make daily work calmer and easier on your hands and back',
+        'Certifications like Nitrous Oxide, Local Anesthesia, and Expanded Duties (EFDA) that add +$3 to +$6/hr to your pay',
+        'How to compare private family dental offices vs. corporate dental chains'
       ],
       link: '/?specialty=Dental'
     },
     {
-      specialty: 'Family Medicine (CMA, RMA, Phlebotomist, Manager)',
-      title: 'Outpatient Primary Care vs. Hospital System Guide',
+      specialty: 'Medical Clinics (CMA, RMA, Phlebotomist, Manager)',
+      title: 'Private Medical Clinic vs. Hospital Shifts Guide',
       points: [
-        'Transitioning from 12-hour hospital floor shifts to predictable Monday–Friday 8:00am–4:30pm private clinics',
-        'High-demand EHR certifications: AthenaHealth, eClinicalWorks, and Elation Health workflows',
-        'Average 2026 hourly wage premiums for AAMA Certified Medical Assistants (CMA) with phlebotomy skills'
+        'Switching from exhausting 12-hour hospital shifts to steady Monday–Friday (8:00 AM – 4:30 PM) private clinic schedules',
+        'Popular clinic software skills that boost your pay: AthenaHealth, eClinicalWorks, and Epic',
+        'How Certified Medical Assistants (CMA) with blood-draw (phlebotomy) and EKG skills earn top hourly rates'
       ],
       link: '/?specialty=Family+Medicine'
     },
     {
-      specialty: 'Vision & Ophthalmology (COA, COT, Licensed Optician)',
-      title: 'Optical Boutique & Ophthalmology Scribe Career Path',
+      specialty: 'Eye & Vision Clinics (Optician, Eye Tech, COA)',
+      title: 'Optical & Eye Clinic Career Guide',
       points: [
-        'How ABO & NCLE certification and luxury frame styling commissions boost Optician earnings above $32/hr',
-        'Mastering Optos Daytona ultra-widefield imaging, Zeiss Cirrus OCT, and ModMed EMA ophthalmic scribing',
-        'JCAHPO Certified Ophthalmic Assistant (COA) employer sponsorship programs'
+        'How ABO & NCLE certification and frame styling bonuses help Opticians earn $32+/hr',
+        'Helpful eye clinic tools to highlight on your CV: Optos imaging, OCT scans, and RevolutionEHR',
+        'How to find private eye doctors who pay for your COA certification training'
       ],
       link: '/?specialty=Vision'
     },
     {
-      specialty: 'Physical Therapy (PTA, Rehab Aide, Front Office)',
-      title: '1-on-1 Outpatient Orthopedic Rehab Career Playbook',
+      specialty: 'Physical Therapy Clinics (PTA, PT Aide, Front Desk)',
+      title: 'Physical Therapy & Rehab Clinic Guide',
       points: [
-        'Identifying therapist-owned 1-on-1 outpatient clinics (45-min sessions) vs. high-volume double-booked mills',
-        'Using Pre-PT Rehab Aide experience in private sports clinics to secure Doctor of Physical Therapy (DPT) letters',
-        'Prompt EMR and WebPT documentation efficiency tips for Physical Therapist Assistants (PTAs)'
+        'How to spot great 1-on-1 physical therapy clinics (45-minute sessions) instead of rushed clinics where you juggle 3 patients at once',
+        'Using PT Aide experience in private sports clinics to get strong recommendation letters for PT school',
+        'Highlighting Prompt EMR and WebPT experience on your job profile'
       ],
       link: '/?specialty=Physical+Therapy'
     },
     {
-      specialty: 'Dermatology & MedSpa (Derm MA, Aesthetician, Mohs Tech)',
-      title: 'Cosmetic Dermatology, Laser & Mohs Surgery Career Guide',
+      specialty: 'Dermatology & MedSpa (Derm MA, Aesthetician, Nurse)',
+      title: 'Dermatology & MedSpa Career Guide',
       points: [
-        'Breaking into high-paying cosmetic dermatology and Mohs micrographic surgery suites (Mon–Thu schedules)',
-        'ModMed EMA iPad scribing, biopsy tray setup, and VISIA digital skin consultation best practices',
-        'Understanding hourly base + service/retail commission structures in physician-owned MedSpas'
+        'How to get hired at top-paying dermatology and cosmetic clinics with 4-day (Mon–Thu) schedules',
+        'Skills that dermatology doctors look for: ModMed EMA iPad charting, biopsy tray setup, and patient photography',
+        'Understanding hourly base pay plus treatment and skincare bonus plans'
       ],
       link: '/?specialty=Dermatology+%26+MedSpa'
     }
@@ -79,36 +78,46 @@ export default function CareerResourcesB2CPage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4 shadow-xs">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-900 text-xs font-bold">
             <BookOpen className="w-3.5 h-3.5 text-cyan-600" />
-            <span>B2C Clinician Resource Center • All 52 US States & Territories</span>
+            <span>Free Career & License Help • All 52 US States</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Clinician Licensing, Career & Wage Negotiation Hub
+            Healthcare Career, State License & Pay Advice
           </h1>
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Actionable market intelligence, specialty workflow checklists, and state-by-state licensing resources built to help US clinic professionals earn more without burnout.
+            Easy-to-read guides, state license transfer rules, and Gemini AI career tools built to help dental and medical staff find better-paying clinic jobs.
           </p>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/salary-calculator"
+              href="/signup?role=candidate"
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
             >
-              <DollarSign className="w-4 h-4" />
-              <span>Launch 2026 Hourly Wage Calculator</span>
+              <UserPlus className="w-4 h-4" />
+              <span>Create Free Job Seeker Account</span>
+            </Link>
+            <Link
+              href="/salary-calculator"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all"
+            >
+              <DollarSign className="w-4 h-4 text-teal-400" />
+              <span>Check Hourly Pay Calculator</span>
             </Link>
             <Link
               href="/alerts"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all"
             >
-              <span>Set Up Free Job Alerts</span>
+              <span>Get Free Job Alerts</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
+        {/* Interactive Gemini AI Career & State License Coach */}
+        <GeminiCareerCoach />
+
         {/* 5 Core Specialty Playbooks */}
         <div className="space-y-4">
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-            Specialty Clinical Career Playbooks
+            Career Tips by Clinic Specialty
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {specialtyGuides.map((g, idx) => (
@@ -136,7 +145,7 @@ export default function CareerResourcesB2CPage() {
                     href={g.link}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 hover:text-teal-900"
                   >
-                    <span>Browse Verified Openings in {g.specialty.split(' ')[0]}</span>
+                    <span>Browse Open {g.specialty.split(' ')[0]} Jobs</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -145,66 +154,66 @@ export default function CareerResourcesB2CPage() {
           </div>
         </div>
 
-        {/* Multi-State Clinical License Compact & Reciprocity Guide */}
+        {/* Multi-State License Transfer Guide */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5 shadow-xs">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700">
               <ShieldCheck className="w-4 h-4 text-teal-600" />
-              <span>2026 Multi-State Licensure Portability</span>
+              <span>Moving to a New State?</span>
             </div>
             <h2 className="text-xl font-extrabold text-slate-900">
-              Interstate Clinical License Reciprocity & Compact Guide
+              How to Transfer Your Healthcare License to Another State
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Relocating to a new state? Here is how interstate licensure compacts work across our 5 core outpatient specialties:
+              Here is how license transfers work across our main clinic roles:
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <span className="font-extrabold text-teal-800 uppercase tracking-wider text-[11px]">
-                🦷 Dental & Hygiene (DDH Compact)
+                🦷 Dental Hygienists & Dentists
               </span>
-              <p className="font-bold text-slate-900">Dentist & Dental Hygienist Compact + Licensure by Credentials</p>
+              <p className="font-bold text-slate-900">Easy License Transfer by Credentials</p>
               <p className="text-slate-600 leading-relaxed">
-                Active RDHs and DDS clinicians with 1,000+ clinical hours and National Board passing scores qualify for expedited Licensure by Credentials or Compact privilege in 40+ states without retaking clinical manikin exams.
+                Active Dental Hygienists (RDH) and Dentists (DDS/DMD) with 1,000+ work hours and National Board passing scores qualify for fast license transfer in 40+ states without retaking clinical board exams.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <span className="font-extrabold text-indigo-800 uppercase tracking-wider text-[11px]">
-                🏃 Physical Therapy (PT Compact)
+                🏃 Physical Therapy (PT & PTA)
               </span>
-              <p className="font-bold text-slate-900">PT & PTA Interstate Compact Privilege</p>
+              <p className="font-bold text-slate-900">PT Compact Multi-State Privilege</p>
               <p className="text-slate-600 leading-relaxed">
-                Licensed Physical Therapists (DPT) and Physical Therapist Assistants (PTA) holding a home-state license in a PT Compact member state can obtain instant compact practice privileges in 35+ participating states online.
+                Licensed Physical Therapists and PTAs in a PT Compact member state can get online approval to work in 35+ participating states in just a few minutes.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <span className="font-extrabold text-emerald-800 uppercase tracking-wider text-[11px]">
-                🩺 CMA / RMA, RN (NLC) & Opticians
+                🩺 Medical Assistants, RNs & Opticians
               </span>
-              <p className="font-bold text-slate-900">National AAMA / AMT & Nurse Licensure Compact (41+ States)</p>
+              <p className="font-bold text-slate-900">National Certifications Work Nationwide</p>
               <p className="text-slate-600 leading-relaxed">
-                AAMA (CMA), AMT (RMA), JCAHPO (COA), and ABO/NCLE credentials are nationally portable across all 52 US jurisdictions, while Outpatient RNs enjoy multi-state privilege across 41+ NLC states.
+                National CMA (AAMA), RMA (AMT), COA, and ABO/NCLE Optician certifications are recognized in all 52 US states, and RNs can use the Nurse Licensure Compact in 41+ states.
               </p>
             </div>
           </div>
         </div>
 
-        {/* 52-State Clinical Licensing & Job Directory */}
+        {/* 52-State Job Directory */}
         <div id="negotiation" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5 shadow-xs">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
               <BadgeCheck className="w-4 h-4 text-emerald-600" />
-              <span>Nationwide State Board Coverage</span>
+              <span>All 52 US States Covered</span>
             </div>
             <h2 className="text-xl font-extrabold text-slate-900">
-              Browse Verified Clinic Jobs by US State & Territory (All 52 Jurisdictions)
+              Browse Clinic Jobs by State
             </h2>
             <p className="text-xs text-slate-600">
-              Select your state below to filter NPI-verified Dental, Family Medicine, Vision, Physical Therapy, and Dermatology openings in your jurisdiction.
+              Click your state below to see open Dental, Medical, Vision, Physical Therapy, and Dermatology jobs near you.
             </p>
           </div>
 

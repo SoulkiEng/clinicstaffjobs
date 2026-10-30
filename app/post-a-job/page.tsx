@@ -18,7 +18,9 @@ import {
   Lock,
   UserPlus,
   Edit3,
-  Copy
+  Copy,
+  AlertCircle,
+  Users
 } from 'lucide-react';
 
 const SAVED_ROLE_TEMPLATES = [
@@ -84,8 +86,17 @@ const SAVED_ROLE_TEMPLATES = [
   },
 ];
 
+const BENEFIT_CHECKBOX_OPTIONS = [
+  '100% Employer-Paid Health & Dental',
+  '401(k) with 4% Match',
+  'Paid Time Off (PTO) & Holidays',
+  'No Weekends (Mon–Thu / Mon–Fri)',
+  '$1,500 Annual CE Allowance',
+  'Monthly Team Bonus Plan',
+];
+
 export default function PostAJobPage() {
-  const { user, isLoading, updateProfile } = useAuth();
+  const { user, isLoading, updateProfile, switchRole } = useAuth();
 
   // Toggle to edit already-saved clinic info only if the employer wants to change it
   const [editingClinicInfo, setEditingClinicInfo] = useState(false);
@@ -95,6 +106,7 @@ export default function PostAJobPage() {
   const [jobTitle, setJobTitle] = useState('Registered Dental Hygienist (RDH) - 60 Min Adult Recare');
   const [clinicType, setClinicType] = useState('Dental');
   const [workType, setWorkType] = useState('Full-time');
+  const [workDays, setWorkDays] = useState('Mon–Thu Only (Fridays Off)');
   const [genderPref, setGenderPref] = useState<'Any' | 'Female' | 'Male'>('Any');
   const [experienceLevel, setExperienceLevel] = useState<'Entry Level' | '1–3 Years' | '3+ Years'>('1–3 Years');
   const [city, setCity] = useState('Dallas');
@@ -104,6 +116,12 @@ export default function PostAJobPage() {
   const [maxHourly, setMaxHourly] = useState('56');
   const [appointmentTime, setAppointmentTime] = useState('60-Minute Adult Patient Slots');
   const [software, setSoftware] = useState('Dentrix Ascend, Dexis Digital X-Ray, iTero 3D');
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([
+    '100% Employer-Paid Health & Dental',
+    '401(k) with 4% Match',
+    'Paid Time Off (PTO) & Holidays',
+    'No Weekends (Mon–Thu / Mon–Fri)',
+  ]);
   const [description, setDescription] = useState(
     'Private clinic seeking a reliable, licensed healthcare professional. We offer a friendly team environment, modern digital equipment, unrushed patient care, and competitive hourly pay.'
   );
@@ -122,9 +140,11 @@ export default function PostAJobPage() {
   const [isPolishing, setIsPolishing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [lastPublishedId, setLastPublishedId] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
   const [pastJobs, setPastJobs] = useState<any[]>([]);
 
-  // Load saved clinic details & past job templates from logged-in employer profile
+  // Load saved clinic details, URL ?state= param, & past job templates from logged-in employer profile
   useEffect(() => {
     if (user) {
       if (user.practiceName) setClinicName(user.practiceName);
@@ -134,6 +154,13 @@ export default function PostAJobPage() {
       if (user.stateCode) setStateCode(user.stateCode);
       if (user.zipCode) setZipCode(user.zipCode);
       if (user.email) setApplyEmail(user.email);
+    }
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const st = params.get('state');
+      if (st && US_STATES_52.some((s) => s.code === st.toUpperCase())) {
+        setStateCode(st.toUpperCase());
+      }
     }
     try {
       const stored = JSON.parse(localStorage.getItem('my_posted_jobs') || '[]');
@@ -147,8 +174,14 @@ export default function PostAJobPage() {
 
   const location = `${city.trim() || 'Dallas'}, ${stateCode}`;
 
-  // Check if the logged-in user is missing any core clinic profile fields
+  // Check if the logged-in user already has core clinic profile fields saved
   const hasSavedClinicProfile = Boolean(user?.practiceName && user?.city && user?.stateCode && user?.email);
+
+  const toggleBenefit = (benefit: string) => {
+    setSelectedBenefits((prev) =>
+      prev.includes(benefit) ? prev.filter((b) => b !== benefit) : [...prev, benefit]
+    );
+  };
 
   const applySavedTemplate = async (tpl: (typeof SAVED_ROLE_TEMPLATES)[0]) => {
     setJobTitle(tpl.title);
@@ -168,6 +201,10 @@ export default function PostAJobPage() {
       minHourly: tpl.minHourly,
       maxHourly: tpl.maxHourly,
       workType: tpl.workType,
+      genderPref,
+      experienceLevel,
+      workDays,
+      customSoftware: tpl.software,
     });
     setDescription(draft.description);
     setResponsibilities(draft.responsibilities);
@@ -186,6 +223,10 @@ export default function PostAJobPage() {
         minHourly: Number(minHourly) || 45,
         maxHourly: Number(maxHourly) || 54,
         workType,
+        genderPref,
+        experienceLevel,
+        workDays,
+        customSoftware: software,
       });
       setDescription(res.description);
       setAppointmentTime(res.appointmentTime);
@@ -199,6 +240,7 @@ export default function PostAJobPage() {
 
   const handlePublishFree = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!user) return;
 
     const finalClinicName = clinicName.trim() || user.practiceName || `${user.name} Clinic`;
@@ -206,18 +248,28 @@ export default function PostAJobPage() {
     const cleanCity = city.trim() || user.city || 'Dallas';
 
     if (!jobTitle.trim()) {
-      alert('Please enter the Job Title.');
+      setFormError('Please enter the Job Position Title.');
+      return;
+    }
+
+    const minNum = Number(minHourly) || 25;
+    const maxNum = Number(maxHourly) || 35;
+    if (maxNum < minNum) {
+      setFormError(
+        `Maximum Hourly Pay ($${maxNum}/hr) cannot be lower than Minimum Hourly Pay ($${minNum}/hr).`
+      );
       return;
     }
 
     setIsSubmitting(true);
     const newId = `job-live-${Date.now()}`;
+    setLastPublishedId(newId);
 
-    // Save any newly entered or updated clinic fields directly to the user's profile so they never repeat it!
+    // Save any newly entered or updated clinic fields directly to the user's profile (no fake NPI!)
     await updateProfile({
       practiceName: finalClinicName,
       practiceType: clinicType,
-      npiNumber: npiNumber.trim() || user.npiNumber || '1487920194',
+      npiNumber: npiNumber.trim() || user.npiNumber || '',
       city: cleanCity,
       stateCode,
       zipCode: zipCode.trim() || user.zipCode || '75225',
@@ -234,25 +286,27 @@ export default function PostAJobPage() {
       state: stateCode,
       zip_code: zipCode.trim() || '75225',
       work_type: workType,
+      work_days: workDays,
       gender_pref: genderPref,
       experience_level: experienceLevel,
       status: 'Active',
-      min_hourly: Number(minHourly) || 35,
-      max_hourly: Number(maxHourly) || 50,
+      min_hourly: minNum,
+      max_hourly: maxNum,
       pay_period: 'hour',
       pay_comparison: `+16% Above ${cleanCity} Avg`,
       is_featured: false,
       is_urgent: isUrgent,
       verified_active: true,
-      npi_number: npiNumber.trim() || user.npiNumber || '1487920194',
-      appointment_time: appointmentTime,
-      software_used: software.split(',').map((s) => s.trim()).filter(Boolean),
-      benefits: [
-        '100% Employer-Paid Medical & Dental',
-        '401(k) with 4% Match',
-        '$1,500 Annual CE Allowance',
-        'Paid Holidays & PTO',
-      ],
+      npi_number: npiNumber.trim() || user.npiNumber || '',
+      appointment_time: `${appointmentTime} (${workDays})`,
+      software_used: software
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      benefits:
+        selectedBenefits.length > 0
+          ? selectedBenefits
+          : ['Paid Time Off (PTO)', 'Health & Dental Coverage'],
       description,
       responsibilities,
       qualifications,
@@ -341,7 +395,41 @@ export default function PostAJobPage() {
     );
   }
 
-  // 2. Success Screen After Publishing
+  // 2. Role Check: If logged in as a Job Seeker, ask if they want to switch to Employer mode
+  if (!isLoading && user && user.role === 'candidate') {
+    return (
+      <div className="min-h-screen bg-slate-50 py-16 px-4">
+        <div className="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 text-center space-y-5 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center mx-auto">
+            <Users className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900">
+            You Are Signed In with a Job Seeker Account
+          </h1>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Job postings are for clinics and healthcare employers. Would you like to switch your account to an <strong>Employer Account</strong> to post a clinic job, or return to the job board?
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <button
+              type="button"
+              onClick={() => switchRole('employer')}
+              className="px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs sm:text-sm cursor-pointer transition-colors"
+            >
+              Switch to Employer Account & Post Job →
+            </button>
+            <Link
+              href="/dashboard/candidate"
+              className="px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm transition-colors"
+            >
+              Back to My Job Seeker Portal
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Success Screen After Publishing
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-slate-50 py-16 px-4">
@@ -380,10 +468,10 @@ export default function PostAJobPage() {
               Go to My Employer Portal →
             </Link>
             <Link
-              href="/"
+              href={`/jobs/view?id=${lastPublishedId}`}
               className="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-colors"
             >
-              View on Job Board
+              View Live Job Page
             </Link>
             <button
               type="button"
@@ -432,6 +520,13 @@ export default function PostAJobPage() {
               </span>
             </div>
 
+            {formError && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
             {/* 1. SAVED CLINIC PROFILE CARD (Only shows inputs if missing or if employer clicks "Edit") */}
             {hasSavedClinicProfile && !editingClinicInfo ? (
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -445,7 +540,8 @@ export default function PostAJobPage() {
                     </span>
                   </div>
                   <p className="text-slate-600">
-                    {clinicType} Clinic • {city}, {stateCode} ({zipCode}) • CVs sent to: <strong>{applyEmail || user?.email}</strong>
+                    {clinicType} Clinic • {city}, {stateCode} ({zipCode}) • CVs sent to:{' '}
+                    <strong>{applyEmail || user?.email}</strong>
                   </p>
                 </div>
 
@@ -459,7 +555,7 @@ export default function PostAJobPage() {
                 </button>
               </div>
             ) : (
-              /* Shown ONLY if clinic info is missing from profile OR employer clicked "Edit Clinic Info" */
+              /* Shown ONLY if clinic info is missing from profile OR employer clicked "Edit Clinic Info" (Strictly 2-Column Aligned!) */
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-slate-900">
@@ -476,7 +572,6 @@ export default function PostAJobPage() {
                   )}
                 </div>
 
-                {/* 2-Column Aligned Grid for Clinic Profile */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                   <div>
                     <label htmlFor="post-clinic-name" className={labelClass}>
@@ -484,6 +579,7 @@ export default function PostAJobPage() {
                     </label>
                     <input
                       id="post-clinic-name"
+                      name="clinicName"
                       type="text"
                       required
                       placeholder="Preston Hollow Dental"
@@ -499,6 +595,7 @@ export default function PostAJobPage() {
                     </label>
                     <select
                       id="post-specialty"
+                      name="clinicType"
                       value={clinicType}
                       onChange={(e) => setClinicType(e.target.value)}
                       className={inputClass}
@@ -517,6 +614,7 @@ export default function PostAJobPage() {
                     </label>
                     <input
                       id="post-npi"
+                      name="npiNumber"
                       type="text"
                       inputMode="numeric"
                       autoCorrect="off"
@@ -536,6 +634,7 @@ export default function PostAJobPage() {
                     </label>
                     <input
                       id="post-email"
+                      name="applyEmail"
                       type="email"
                       required
                       autoComplete="email"
@@ -555,6 +654,7 @@ export default function PostAJobPage() {
                     </label>
                     <input
                       id="post-city"
+                      name="city"
                       type="text"
                       required
                       placeholder="Dallas"
@@ -564,47 +664,47 @@ export default function PostAJobPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 items-end">
-                    <div>
-                      <label htmlFor="post-state" className={labelClass}>
-                        State *
-                      </label>
-                      <select
-                        id="post-state"
-                        value={stateCode}
-                        onChange={(e) => setStateCode(e.target.value)}
-                        className={inputClass}
-                      >
-                        {US_STATES_52.map((st) => (
-                          <option key={st.code} value={st.code}>
-                            {st.code} - {st.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label htmlFor="post-state" className={labelClass}>
+                      State (All 52 US States) *
+                    </label>
+                    <select
+                      id="post-state"
+                      name="stateCode"
+                      value={stateCode}
+                      onChange={(e) => setStateCode(e.target.value)}
+                      className={inputClass}
+                    >
+                      {US_STATES_52.map((st) => (
+                        <option key={st.code} value={st.code}>
+                          {st.name} ({st.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div>
-                      <label htmlFor="post-zip" className={labelClass}>
-                        ZIP Code *
-                      </label>
-                      <input
-                        id="post-zip"
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="postal-code"
-                        required
-                        placeholder="75225"
-                        value={zipCode}
-                        onChange={(e) => setZipCode(e.target.value)}
-                        className={inputClass}
-                      />
-                    </div>
+                  <div>
+                    <label htmlFor="post-zip" className={labelClass}>
+                      Clinic ZIP Code *
+                    </label>
+                    <input
+                      id="post-zip"
+                      name="zipCode"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      required
+                      placeholder="75225"
+                      value={zipCode}
+                      onChange={(e) => setZipCode(e.target.value)}
+                      className={inputClass}
+                    />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 2. 1-CLICK SAVED JOB TEMPLATES (No Need to Re-Build Templates!) */}
+            {/* 2. 1-CLICK SAVED JOB TEMPLATES */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -651,13 +751,13 @@ export default function PostAJobPage() {
 
             {/* 3. PERFECTLY ALIGNED ROLE DETAILS (Full-width Title + 2-Column Aligned Rows) */}
             <div className="space-y-5 pt-2 border-t border-slate-100">
-              {/* Full-Width Job Title so long titles never get cut off */}
               <div>
                 <label htmlFor="post-title" className={labelClass}>
                   Job Position Title *
                 </label>
                 <input
                   id="post-title"
+                  name="jobTitle"
                   type="text"
                   required
                   placeholder="e.g. Registered Dental Hygienist (RDH) - 60 Min Adult Recare"
@@ -667,7 +767,7 @@ export default function PostAJobPage() {
                 />
               </div>
 
-              {/* Row A: Work Schedule & Experience Level (2 Equal Columns) */}
+              {/* Row A: Work Schedule & Working Days (2 Equal Columns) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label htmlFor="post-schedule" className={labelClass}>
@@ -675,22 +775,45 @@ export default function PostAJobPage() {
                   </label>
                   <select
                     id="post-schedule"
+                    name="workType"
                     value={workType}
                     onChange={(e) => setWorkType(e.target.value)}
                     className={inputClass}
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time / Flexible</option>
-                    <option value="PRN / Temp">PRN / Temporary</option>
+                    <option value="PRN / Temp">Temp / Fill-In Shifts (PRN)</option>
                   </select>
                 </div>
 
+                <div>
+                  <label htmlFor="post-workdays" className={labelClass}>
+                    Working Days (Shift Schedule)
+                  </label>
+                  <select
+                    id="post-workdays"
+                    name="workDays"
+                    value={workDays}
+                    onChange={(e) => setWorkDays(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="Mon–Thu Only (Fridays Off)">Mon–Thu Only (Fridays Off)</option>
+                    <option value="Mon–Fri (No Weekends)">Mon–Fri (No Weekends)</option>
+                    <option value="Flexible 2–3 Days/Week">Flexible 2–3 Days/Week</option>
+                    <option value="Weekends Available">Weekends Available</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row B: Experience Level & Staff Gender Preference (2 Equal Columns) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label htmlFor="post-exp" className={labelClass}>
                     Experience Level Required *
                   </label>
                   <select
                     id="post-exp"
+                    name="experienceLevel"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value as any)}
                     className={inputClass}
@@ -700,16 +823,14 @@ export default function PostAJobPage() {
                     <option value="3+ Years">3+ Years (Senior / Lead)</option>
                   </select>
                 </div>
-              </div>
 
-              {/* Row B: Staff Gender Preference & Patient Schedule (2 Equal Columns) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label htmlFor="post-gender" className={labelClass}>
                     Staff Gender Preference
                   </label>
                   <select
                     id="post-gender"
+                    name="genderPref"
                     value={genderPref}
                     onChange={(e) => setGenderPref(e.target.value as 'Any' | 'Female' | 'Male')}
                     className={inputClass}
@@ -718,20 +839,6 @@ export default function PostAJobPage() {
                     <option value="Female">Female Staff Preferred</option>
                     <option value="Male">Male Staff Preferred</option>
                   </select>
-                </div>
-
-                <div>
-                  <label htmlFor="post-pace" className={labelClass}>
-                    Daily Patient Schedule / Shifts
-                  </label>
-                  <input
-                    id="post-pace"
-                    type="text"
-                    placeholder="e.g. 60-Minute Adult Patient Slots"
-                    value={appointmentTime}
-                    onChange={(e) => setAppointmentTime(e.target.value)}
-                    className={inputClass}
-                  />
                 </div>
               </div>
 
@@ -743,6 +850,7 @@ export default function PostAJobPage() {
                   </label>
                   <input
                     id="post-min-pay"
+                    name="minHourly"
                     type="text"
                     inputMode="numeric"
                     required
@@ -759,6 +867,7 @@ export default function PostAJobPage() {
                   </label>
                   <input
                     id="post-max-pay"
+                    name="maxHourly"
                     type="text"
                     inputMode="numeric"
                     required
@@ -770,14 +879,30 @@ export default function PostAJobPage() {
                 </div>
               </div>
 
-              {/* Row D: Clinic Software & Urgent Badge (2 Equal Aligned Columns) */}
+              {/* Row D: Patient Schedule & Clinic Software (2 Equal Aligned Columns) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                <div>
+                  <label htmlFor="post-pace" className={labelClass}>
+                    Daily Patient Pace / Slot Time
+                  </label>
+                  <input
+                    id="post-pace"
+                    name="appointmentTime"
+                    type="text"
+                    placeholder="e.g. 60-Minute Adult Patient Slots"
+                    value={appointmentTime}
+                    onChange={(e) => setAppointmentTime(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
                 <div>
                   <label htmlFor="post-software" className={labelClass}>
                     Clinic Software Used
                   </label>
                   <input
                     id="post-software"
+                    name="software"
                     type="text"
                     placeholder="Dentrix, Eaglesoft, Open Dental..."
                     value={software}
@@ -785,25 +910,55 @@ export default function PostAJobPage() {
                     className={inputClass}
                   />
                 </div>
+              </div>
 
-                <div>
-                  <span className={labelClass}>Hiring Priority Badge</span>
-                  <label
-                    className={`h-11 px-3.5 rounded-xl border cursor-pointer flex items-center gap-2.5 transition-all ${
-                      isUrgent ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-300'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isUrgent}
-                      onChange={(e) => setIsUrgent(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 accent-teal-600"
-                    />
-                    <span className="text-xs font-bold text-slate-800 truncate">
-                      Add &ldquo;Urgently Hiring&rdquo; Badge (Free)
-                    </span>
-                  </label>
+              {/* Benefits & Perks Checkboxes */}
+              <fieldset className="space-y-2 pt-2">
+                <legend className="text-xs font-bold text-slate-700">
+                  Benefits & Perks Included (Select all that apply):
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {BENEFIT_CHECKBOX_OPTIONS.map((bf) => {
+                    const checked = selectedBenefits.includes(bf);
+                    return (
+                      <label
+                        key={bf}
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-2 cursor-pointer transition-all ${
+                          checked
+                            ? 'bg-teal-50 border-teal-500 text-teal-900 font-bold'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleBenefit(bf)}
+                          className="accent-teal-600 rounded"
+                        />
+                        <span className="truncate">{bf}</span>
+                      </label>
+                    );
+                  })}
                 </div>
+              </fieldset>
+
+              {/* Urgent Hiring Badge Toggle */}
+              <div>
+                <label
+                  className={`h-11 px-3.5 rounded-xl border cursor-pointer flex items-center gap-2.5 transition-all ${
+                    isUrgent ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isUrgent}
+                    onChange={(e) => setIsUrgent(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 accent-teal-600"
+                  />
+                  <span className="text-xs font-bold text-slate-800">
+                    Add &ldquo;Urgently Hiring&rdquo; Priority Badge (Free)
+                  </span>
+                </label>
               </div>
 
               {/* Job Description + Gemini AI Full Job Writer Button */}
@@ -829,6 +984,7 @@ export default function PostAJobPage() {
                 </div>
                 <textarea
                   id="post-desc"
+                  name="description"
                   rows={5}
                   required
                   value={description}
@@ -905,13 +1061,26 @@ export default function PostAJobPage() {
                 </p>
               </div>
 
+              <p className="text-xs text-slate-600 line-clamp-2">{description}</p>
+
+              <div className="flex flex-wrap gap-1.5">
+                {selectedBenefits.slice(0, 3).map((bf) => (
+                  <span
+                    key={bf}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  >
+                    ✓ {bf}
+                  </span>
+                ))}
+              </div>
+
               <div className="pt-3 flex items-baseline justify-between border-t border-slate-100">
                 <div className="text-xl font-black text-slate-900">
                   ${minHourly || '46'} – ${maxHourly || '56'}
                   <span className="text-xs font-semibold text-slate-500">/hr</span>
                 </div>
                 <span className="text-[11px] font-bold text-emerald-700">
-                  {experienceLevel}
+                  {experienceLevel} • {workDays}
                 </span>
               </div>
             </div>
@@ -925,15 +1094,21 @@ export default function PostAJobPage() {
               <ul className="space-y-2 leading-relaxed">
                 <li className="flex items-start gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Saved Clinic Info:</strong> Your clinic profile is attached automatically so you only enter the role details.</span>
+                  <span>
+                    <strong>Saved Clinic Info:</strong> Your clinic profile is attached automatically so you only enter the role details.
+                  </span>
                 </li>
                 <li className="flex items-start gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>1-Click Templates:</strong> Pick any role template above or reuse a past job in 1 click.</span>
+                  <span>
+                    <strong>1-Click Templates:</strong> Pick any role template above or reuse a past job in 1 click.
+                  </span>
                 </li>
                 <li className="flex items-start gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Active & Inactive Control:</strong> Pause or re-open this job anytime inside your Employer Portal.</span>
+                  <span>
+                    <strong>Active & Inactive Control:</strong> Pause or re-open this job anytime inside your Employer Portal.
+                  </span>
                 </li>
               </ul>
             </div>

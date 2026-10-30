@@ -195,5 +195,35 @@ export const SALARY_BENCHMARKS = [
       { city: 'Los Angeles, CA', avg: 28, high: 35, count: 92 },
       { city: 'New York, NY', avg: 29, high: 36, count: 104 }
     ]
+  },
+  {
+    role: 'Licensed Optician & Optometric Tech (COA)',
+    cities: [
+      { city: 'Dallas, TX', avg: 26, high: 33, count: 42 },
+      { city: 'Houston, TX', avg: 25.5, high: 32, count: 48 },
+      { city: 'Miami, FL', avg: 26, high: 33, count: 39 },
+      { city: 'Orlando, FL', avg: 24, high: 30, count: 34 },
+      { city: 'Atlanta, GA', avg: 25.5, high: 32, count: 41 },
+      { city: 'Phoenix, AZ', avg: 26.5, high: 33.5, count: 38 },
+      { city: 'Austin, TX', avg: 27, high: 34, count: 35 },
+      { city: 'Chicago, IL', avg: 28, high: 35, count: 46 },
+      { city: 'Los Angeles, CA', avg: 30, high: 38, count: 55 },
+      { city: 'New York, NY', avg: 32, high: 40, count: 61 }
+    ]
+  },
+  {
+    role: 'Dermatology & MedSpa Clinical Assistant',
+    cities: [
+      { city: 'Dallas, TX', avg: 27, high: 35, count: 47 },
+      { city: 'Houston, TX', avg: 26, high: 34, count: 51 },
+      { city: 'Miami, FL', avg: 28, high: 37, count: 62 },
+      { city: 'Orlando, FL', avg: 25, high: 32, count: 38 },
+      { city: 'Atlanta, GA', avg: 26.5, high: 34.5, count: 49 },
+      { city: 'Phoenix, AZ', avg: 27.5, high: 36, count: 45 },
+      { city: 'Austin, TX', avg: 28, high: 36, count: 43 },
+      { city: 'Chicago, IL', avg: 28.5, high: 36.5, count: 50 },
+      { city: 'Los Angeles, CA', avg: 32, high: 42, count: 74 },
+      { city: 'New York, NY', avg: 34, high: 44, count: 79 }
+    ]
   }
 ];

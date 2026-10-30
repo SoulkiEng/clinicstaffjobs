@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import { Job } from '@/data/jobs';
+import { useAuth } from '@/context/AuthContext';
 import { getGeminiJobInsights } from '@/lib/gemini';
 import { Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function GeminiJobInsightsCard({ job }: { job: Job }) {
+  const { user } = useAuth();
   const [insights, setInsights] = useState<{
     salaryVerdict: string;
     interviewTips: string[];
@@ -23,6 +25,8 @@ export default function GeminiJobInsightsCard({ job }: { job: Job }) {
         state: job.state,
         minHourly: job.minHourly,
         maxHourly: job.maxHourly,
+        candidateDesiredPay: user?.role === 'candidate' ? user.desiredHourly : undefined,
+        candidateSpecialty: user?.role === 'candidate' ? user.specialty : undefined,
       });
       setInsights(res);
     } finally {

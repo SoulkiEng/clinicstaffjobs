@@ -9,7 +9,6 @@ import { generateCoverNoteWithGemini } from '@/lib/gemini';
 import {
   MapPin,
   Clock,
-  ShieldCheck,
   Sparkles,
   ArrowRight,
   Laptop,
@@ -34,6 +33,7 @@ interface JobCardProps {
 }
 
 export function getJobGenderPref(job: Job): 'Female' | 'Male' | 'Any' {
+  if ((job as any).genderPref) return (job as any).genderPref;
   const hash = job.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   if (job.clinicType === 'Dermatology & MedSpa' && hash % 3 !== 0) return 'Female';
   if (hash % 5 === 0) return 'Female';
@@ -42,6 +42,7 @@ export function getJobGenderPref(job: Job): 'Female' | 'Male' | 'Any' {
 }
 
 export function getJobExperienceLevel(job: Job): 'Entry Level' | '1–3 Years' | '3+ Years' {
+  if ((job as any).experienceLevel) return (job as any).experienceLevel;
   if (job.minHourly < 26) return 'Entry Level';
   if (job.minHourly < 42) return '1–3 Years';
   return '3+ Years';
@@ -79,6 +80,9 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [appliedSuccess, setAppliedSuccess] = useState(false);
 
+  // Dynamic URL so newly posted jobs (job-live-...) never hit a 404 on static hosting
+  const jobUrl = job.id.startsWith('job-live-') ? `/jobs/view?id=${job.id}` : `/jobs/${job.id}`;
+
   useEffect(() => {
     const syncState = () => {
       try {
@@ -86,6 +90,10 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
         setIsSaved(savedIds.includes(job.id));
         const compareIds: string[] = JSON.parse(localStorage.getItem('compare_clinic_jobs') || '[]');
         setIsCompared(compareIds.includes(job.id));
+        const appliedList = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
+        if (Array.isArray(appliedList) && appliedList.some((a: any) => a.job_id === job.id)) {
+          setAppliedSuccess(true);
+        }
       } catch {
         // ignore
       }
@@ -93,9 +101,11 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     syncState();
     window.addEventListener('savedJobsUpdated', syncState);
     window.addEventListener('compareJobsUpdated', syncState);
+    window.addEventListener('appliedJobsUpdated', syncState);
     return () => {
       window.removeEventListener('savedJobsUpdated', syncState);
       window.removeEventListener('compareJobsUpdated', syncState);
+      window.removeEventListener('appliedJobsUpdated', syncState);
     };
   }, [job.id]);
 
@@ -146,8 +156,8 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     e.stopPropagation();
     const url =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/jobs/${job.id}`
-        : `https://clinicstaffjobs.com/jobs/${job.id}`;
+        ? `${window.location.origin}${jobUrl}`
+        : `https://clinicstaffjobs.com${jobUrl}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).catch(() => {});
     }
@@ -163,6 +173,8 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
       jobTitle: job.title,
       clinicName: job.clinicName,
       location: job.location,
+      experienceYears: user?.yearsExperience,
+      licenseNumber: user?.licenseNumber || missingLicense.trim(),
     });
     setApplicantNote(note);
     setIsGeneratingNote(false);
@@ -194,7 +206,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
       candidate_email: user.email,
       candidate_phone: finalPhone || '(Saved in Profile)',
       license_number: finalLicense,
-      experience_years: user.yearsExperience || 'Experienced',
+      experience_years: user.yearsExperience || '1–3 Years',
       desired_pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
       pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
       resume_file: user.resumeFileName || `${user.name.replace(/\s+/g, '_')}_Resume.pdf`,
@@ -224,6 +236,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     try {
       const existing = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
       localStorage.setItem('my_applied_jobs', JSON.stringify([appRecord, ...existing]));
+      window.dispatchEvent(new Event('appliedJobsUpdated'));
     } catch {
       // ignore
     }
@@ -232,8 +245,19 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     setAppliedSuccess(true);
   };
 
-  const genderPref = (job as any).genderPref || getJobGenderPref(job);
-  const expLevel = (job as any).experienceLevel || getJobExperienceLevel(job);
+  const genderPref = getJobGenderPref(job);
+  const expLevel = getJobExperienceLevel(job);
+
+  // Competitor Feature (Vivian Health / DentalPost): Compute Profile Match % for logged-in Job Seekers
+  let matchScore: number | null = null;
+  if (user && user.role === 'candidate') {
+    let score = 78;
+    if (user.stateCode && job.state === user.stateCode) score += 10;
+    const roleWords = (user.specialty || '').toLowerCase().split(/\s+/);
+    if (roleWords.some((w) => w.length > 3 && job.title.toLowerCase().includes(w))) score += 8;
+    if (user.desiredHourly && job.maxHourly >= user.desiredHourly) score += 3;
+    matchScore = Math.min(99, score);
+  }
 
   const categoryStyles: Record<string, { badge: string; avatar: string }> = {
     Dental: {
@@ -292,7 +316,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
           </div>
 
           <div className="space-y-2 flex-1 min-w-0">
-            {/* Row 1: Category, Schedule, Gender & Experience Tags */}
+            {/* Row 1: Category, Schedule, Gender, Experience & Profile Match Tags */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${style.badge}`}>
                 {job.clinicType}
@@ -313,18 +337,27 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                 </span>
               </span>
 
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                <BadgeCheck className="w-3 h-3 text-emerald-600" />
-                <span>Verified Clinic</span>
-              </span>
+              {matchScore !== null && matchScore >= 85 && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                  <Sparkles className="w-3 h-3 text-emerald-700" />
+                  <span>{matchScore}% Profile Match</span>
+                </span>
+              )}
+
+              {appliedSuccess && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-teal-900 bg-teal-100 px-2 py-0.5 rounded-md border border-teal-300">
+                  <CheckCircle2 className="w-3 h-3 text-teal-700" />
+                  <span>✓ Applied</span>
+                </span>
+              )}
 
               <span className="text-xs text-slate-400 font-medium">• {relativeTime}</span>
             </div>
 
-            {/* Row 2: Job Title & Clinic Location */}
+            {/* Row 2: Job Title & Single Verified Clinic Location Row */}
             <div>
               <Link
-                href={`/jobs/${job.id}`}
+                href={jobUrl}
                 className="text-base sm:text-lg font-extrabold text-slate-900 hover:text-teal-600 transition-colors leading-snug block"
               >
                 {job.title}
@@ -341,8 +374,8 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                   {job.location}
                 </span>
 
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                  <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
                   Verified Clinic
                 </span>
               </div>
@@ -380,7 +413,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
           </div>
         </div>
 
-        {/* Right: Aligned Hourly Pay Box & Action Buttons */}
+        {/* Right: Aligned Hourly Pay Box & Role-Aware Action Buttons */}
         <div className="w-full sm:w-auto flex sm:flex-col items-center sm:items-end justify-between gap-2.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
           <div className="sm:text-right">
             <div className="flex items-baseline sm:justify-end gap-0.5">
@@ -395,7 +428,22 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
           </div>
 
           <div className="flex items-center gap-2">
-            {user ? (
+            {user?.role === 'employer' ? (
+              <Link
+                href="/post-a-job"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all"
+              >
+                <span>Post Similar Job</span>
+              </Link>
+            ) : appliedSuccess ? (
+              <Link
+                href="/dashboard/candidate"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-extrabold transition-all"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Applied ✓</span>
+              </Link>
+            ) : user ? (
               <button
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -406,7 +454,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               </button>
             ) : (
               <Link
-                href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                href={`/signup?role=candidate&redirect=${encodeURIComponent(jobUrl)}`}
                 className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
@@ -415,7 +463,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
             )}
 
             <Link
-              href={`/jobs/${job.id}`}
+              href={jobUrl}
               className="inline-flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all"
             >
               <span>View Details</span>
@@ -450,7 +498,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               </div>
             </div>
 
-            {/* Right Box: Account Required if Logged Out, or 1-Click Saved Profile Apply if Logged In */}
+            {/* Right Box: Role-Aware (Employer vs Candidate vs Logged Out) */}
             <div className="bg-white rounded-xl p-4 border border-teal-200 space-y-3 flex flex-col justify-center">
               {!user ? (
                 <div className="space-y-3 text-center py-2">
@@ -467,18 +515,33 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                   </div>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                     <Link
-                      href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                      href={`/signup?role=candidate&redirect=${encodeURIComponent(jobUrl)}`}
                       className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition-colors"
                     >
                       Create Free Job Seeker Account →
                     </Link>
                     <Link
-                      href={`/login?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                      href={`/login?role=candidate&redirect=${encodeURIComponent(jobUrl)}`}
                       className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
                     >
                       Sign In
                     </Link>
                   </div>
+                </div>
+              ) : user.role === 'employer' ? (
+                <div className="space-y-3 text-center py-2">
+                  <h4 className="text-sm font-extrabold text-slate-900">
+                    Signed In with Your Employer Account
+                  </h4>
+                  <p className="text-xs text-slate-600">
+                    Want to post a similar {job.clinicType} opening for {user.practiceName || 'your clinic'}?
+                  </p>
+                  <Link
+                    href="/post-a-job"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
+                  >
+                    <span>Post a Similar Job Opening →</span>
+                  </Link>
                 </div>
               ) : appliedSuccess ? (
                 <div className="space-y-2.5">
@@ -516,11 +579,13 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                       {!user.phone && (
                         <div>
                           <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                            Add Phone (Will be saved to profile) *
+                            Add Phone (Saved to profile) *
                           </label>
                           <input
                             type="tel"
+                            name="phone"
                             required
+                            autoComplete="tel"
                             placeholder="(214) 555-0192"
                             value={missingPhone}
                             onChange={(e) => setMissingPhone(e.target.value)}
@@ -535,6 +600,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                           </label>
                           <input
                             type="text"
+                            name="licenseNumber"
                             placeholder="e.g. TX-RDH-94821"
                             value={missingLicense}
                             onChange={(e) => setMissingLicense(e.target.value)}
@@ -562,6 +628,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                     </div>
                     <textarea
                       rows={2}
+                      name="applicantNote"
                       placeholder="Click 'Write with Gemini AI' or submit directly..."
                       value={applicantNote}
                       onChange={(e) => setApplicantNote(e.target.value)}

@@ -133,9 +133,9 @@ export default function SignupPage() {
           </span>
         </Link>
         <h1 className="text-2xl font-extrabold text-slate-900">
-          {redirectTo === '/post-a-job'
+          {redirectTo.startsWith('/post-a-job')
             ? 'Create Your Free Employer Account to Post a Job'
-            : redirectTo.startsWith('/jobs/')
+            : redirectTo.startsWith('/jobs')
             ? 'Create Your Free Job Seeker Account to Apply'
             : 'Create Your Free Account'}
         </h1>
@@ -197,7 +197,11 @@ export default function SignupPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2">
+            <div
+              role="status"
+              aria-live="polite"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2"
+            >
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
@@ -212,6 +216,7 @@ export default function SignupPage() {
                 </label>
                 <input
                   id="signup-name"
+                  name="name"
                   type="text"
                   required
                   autoComplete="name"
@@ -228,6 +233,7 @@ export default function SignupPage() {
                 </label>
                 <input
                   id="signup-email"
+                  name="email"
                   type="email"
                   required
                   autoComplete="email"
@@ -252,6 +258,7 @@ export default function SignupPage() {
                     </label>
                     <select
                       id="signup-cand-role"
+                      name="candidateRole"
                       value={candidateRole}
                       onChange={(e) => setCandidateRole(e.target.value)}
                       className={inputClass}
@@ -273,6 +280,7 @@ export default function SignupPage() {
                     </label>
                     <select
                       id="signup-cand-gender"
+                      name="gender"
                       value={gender}
                       onChange={(e) => setGender(e.target.value as any)}
                       className={inputClass}
@@ -292,6 +300,7 @@ export default function SignupPage() {
                     </label>
                     <select
                       id="signup-cand-exp"
+                      name="yearsExperience"
                       value={yearsExperience}
                       onChange={(e) => setYearsExperience(e.target.value)}
                       className={inputClass}
@@ -303,15 +312,20 @@ export default function SignupPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="signup-cv-file" className="block text-xs font-bold text-slate-700 mb-1.5">
                       Upload CV / Resume (Optional)
                     </label>
-                    <label className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-dashed border-teal-400 bg-teal-50/50 hover:bg-teal-50 text-teal-900 font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                    <label
+                      htmlFor="signup-cv-file"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-dashed border-teal-400 bg-teal-50/50 hover:bg-teal-50 text-teal-900 font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
                       <Upload className="w-4 h-4 text-teal-600 shrink-0" />
                       <span className="truncate">
                         {resumeFileName ? `Attached: ${resumeFileName}` : 'Choose CV File (PDF / DOCX)'}
                       </span>
                       <input
+                        id="signup-cv-file"
+                        name="resumeFile"
                         type="file"
                         accept=".pdf,.doc,.docx"
                         onChange={(e) => {
@@ -333,6 +347,7 @@ export default function SignupPage() {
                     </label>
                     <input
                       id="signup-clinic-name"
+                      name="practiceName"
                       type="text"
                       required
                       placeholder="Preston Hollow Dental"
@@ -348,6 +363,7 @@ export default function SignupPage() {
                     </label>
                     <select
                       id="signup-clinic-type"
+                      name="specialty"
                       value={specialty}
                       onChange={(e) => setSpecialty(e.target.value)}
                       className={inputClass}
@@ -368,6 +384,7 @@ export default function SignupPage() {
                     </label>
                     <input
                       id="signup-npi"
+                      name="npiNumber"
                       type="text"
                       inputMode="numeric"
                       autoCorrect="off"
@@ -387,6 +404,7 @@ export default function SignupPage() {
                     </label>
                     <input
                       id="signup-zip"
+                      name="zipCode"
                       type="text"
                       inputMode="numeric"
                       autoComplete="postal-code"
@@ -409,6 +427,7 @@ export default function SignupPage() {
                 </label>
                 <input
                   id="signup-city"
+                  name="city"
                   type="text"
                   required
                   placeholder="Dallas"
@@ -424,6 +443,7 @@ export default function SignupPage() {
                 </label>
                 <select
                   id="signup-state"
+                  name="stateCode"
                   value={stateCode}
                   onChange={(e) => setStateCode(e.target.value)}
                   className={inputClass}
@@ -445,6 +465,7 @@ export default function SignupPage() {
                 </label>
                 <input
                   id="signup-phone"
+                  name="phone"
                   type="tel"
                   required
                   autoComplete="tel"
@@ -462,6 +483,7 @@ export default function SignupPage() {
                 <div className="relative">
                   <input
                     id="signup-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     minLength={6}
@@ -505,9 +527,9 @@ export default function SignupPage() {
               ) : (
                 <>
                   <span>
-                    {redirectTo === '/post-a-job'
+                    {redirectTo.startsWith('/post-a-job')
                       ? 'Create Employer Account & Continue to Post Job'
-                      : redirectTo.startsWith('/jobs/')
+                      : redirectTo.startsWith('/jobs')
                       ? 'Create Job Seeker Account & Continue to Apply'
                       : `Create Free ${role === 'candidate' ? 'Job Seeker' : 'Employer'} Account`}
                   </span>

@@ -33,10 +33,14 @@ export default function Navbar() {
     { href: '/alerts', label: 'Job Alerts', icon: Bell, badge: 'Free' },
   ];
 
+  const postJobHref = user
+    ? '/post-a-job'
+    : '/signup?role=employer&redirect=/post-a-job';
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-16 gap-3">
           {/* Left: Brand Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-xs group-hover:bg-teal-700 transition-colors">
@@ -57,8 +61,8 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Center: Clean Pill Navigation (Zero Wrapping) */}
-          <nav className="hidden xl:flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
+          {/* Center: Clean Pill Navigation (Visible on 1024px+ laptops & desktops) */}
+          <nav className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -70,7 +74,7 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
                     isActive
                       ? 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-200'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -105,13 +109,15 @@ export default function Navbar() {
                   ) : (
                     <User className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                   )}
-                  <span>{user.role === 'employer' ? 'Employer Account' : 'My Account & CV'}</span>
+                  <span>{user.role === 'employer' ? 'Employer Portal' : 'My Profile & CV'}</span>
                 </Link>
 
                 <button
+                  type="button"
                   onClick={logout}
                   className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   title="Sign Out"
+                  aria-label="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -134,8 +140,8 @@ export default function Navbar() {
             )}
 
             <Link
-              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold whitespace-nowrap shadow-xs transition-all"
+              href={postJobHref}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold whitespace-nowrap shadow-xs transition-all"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Post a Job (Free)</span>
@@ -143,15 +149,16 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex xl:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
             <Link
-              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
+              href={postJobHref}
               className="sm:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-bold whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Post Job</span>
             </Link>
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               aria-label="Toggle navigation menu"
@@ -164,7 +171,7 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="xl:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-5 space-y-2">
+        <div className="lg:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-5 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -195,9 +202,10 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3.5 py-2.5 text-sm font-bold text-teal-800 bg-teal-50 rounded-xl"
                 >
-                  Open {user.role === 'employer' ? 'Employer Account' : 'My Account & CV'}
+                  Open {user.role === 'employer' ? 'Employer Portal' : 'My Profile & CV'}
                 </Link>
                 <button
+                  type="button"
                   onClick={() => {
                     logout();
                     setMobileMenuOpen(false);
@@ -227,7 +235,7 @@ export default function Navbar() {
             )}
 
             <Link
-              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
+              href={postJobHref}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-teal-600 text-white font-extrabold text-sm"
             >

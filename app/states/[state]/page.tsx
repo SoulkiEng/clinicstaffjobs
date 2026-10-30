@@ -4,11 +4,8 @@ import { notFound } from 'next/navigation';
 import { ALL_JOBS, US_STATES_52 } from '@/data/jobs';
 import JobCard from '@/components/JobCard';
 import {
-  MapPin,
   BadgeCheck,
-  ShieldCheck,
   Building2,
-  TrendingUp,
   ArrowLeft,
   PlusCircle,
   Bell,
@@ -28,12 +25,12 @@ export async function generateMetadata({ params }: PageProps) {
   const code = state.toUpperCase();
   const stateObj = US_STATES_52.find((s) => s.code === code);
   if (!stateObj) {
-    return { title: 'State Clinical Jobs | ClinicStaffJobs' };
+    return { title: 'State Clinic Jobs | ClinicStaffJobs' };
   }
   const stateJobs = ALL_JOBS.filter((j) => j.state === code);
   return {
-    title: `${stateObj.name} (${code}) Dental, Medical & Outpatient Clinic Jobs (${stateJobs.length} Verified) | ClinicStaffJobs`,
-    description: `Browse ${stateJobs.length} NPI-verified private practice jobs in ${stateObj.name} (${code}). Direct hiring for Dental Hygienists (RDH), Dental Assistants (RDA), Medical Assistants (CMA), PTAs, and Opticians with mandatory hourly pay transparency.`,
+    title: `${stateObj.name} (${code}) Dental & Healthcare Clinic Jobs (${stateJobs.length} Open Jobs) | ClinicStaffJobs`,
+    description: `Browse ${stateJobs.length} verified clinic jobs in ${stateObj.name} (${code}). Direct hiring for Dental Hygienists (RDH), Dental Assistants (RDA), Medical Assistants (CMA), PTAs, and Opticians with clear hourly pay.`,
   };
 }
 
@@ -78,7 +75,7 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
       {
         '@type': 'ListItem',
         position: 1,
-        name: 'ClinicStaffJobs 52-State Feed',
+        name: 'All Clinic Jobs',
         item: 'https://clinicstaffjobs.com/',
       },
       {
@@ -98,7 +95,7 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
       />
 
       <div className="min-h-screen bg-slate-50 pb-20">
-        {/* State SEO Hero Header */}
+        {/* State Hero Header */}
         <section className="bg-slate-900 text-white py-12 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
           <div className="max-w-7xl mx-auto space-y-5">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -107,25 +104,25 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-300 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to All 52 US States Feed</span>
+                <span>Back to All Jobs</span>
               </Link>
 
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
                 <BadgeCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{stateObj.name} State Board & NPI Registry Verified</span>
+                <span>Verified Private Clinics in {stateObj.name}</span>
               </span>
             </div>
 
             <div className="max-w-4xl space-y-3">
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Verified Private Practice & Outpatient Clinic Jobs in{' '}
+                Dental & Healthcare Clinic Jobs in{' '}
                 <span className="text-teal-400">
                   {stateObj.name} ({code})
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                Explore <strong className="text-white">{stateJobs.length}</strong> live NPI-verified openings across{' '}
-                <strong className="text-white">{cities.join(', ')}</strong>. 100% direct-to-practice hiring for Dental, Family Medicine, Optometry, Physical Therapy, and Dermatology clinics with zero staffing agencies.
+                Explore <strong className="text-white">{stateJobs.length}</strong> open clinic jobs across{' '}
+                <strong className="text-white">{cities.join(', ')}</strong>. Apply directly to Dental, Family Medicine, Vision, Physical Therapy, and Dermatology clinics in 1 click.
               </p>
             </div>
 
@@ -133,16 +130,16 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Verified {code} Openings
+                  Open {code} Jobs
                 </div>
                 <div className="text-xl sm:text-2xl font-black text-white mt-0.5">
-                  {stateJobs.length} Live Roles
+                  {stateJobs.length} Open Jobs
                 </div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Avg Top Hourly Rate ({code})
+                  Avg Top Hourly Pay ({code})
                 </div>
                 <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">
                   ${avgMaxHourly}/hr
@@ -151,7 +148,7 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
 
               <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Active {code} Cities
+                  Hiring {code} Cities
                 </div>
                 <div className="text-sm font-bold text-white mt-1 truncate">
                   {cities.join(' • ') || stateObj.name}
@@ -160,7 +157,7 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
 
               <div className="p-3.5 rounded-2xl bg-slate-800/90 border border-slate-700">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Platform Fee ({code})
+                  Cost to Use ({code})
                 </div>
                 <div className="text-xl sm:text-2xl font-black text-teal-300 mt-0.5">
                   $0 (100% Free)
@@ -177,18 +174,18 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-                  2026 {stateObj.name} ({code}) Outpatient Clinic Wage & Specialty Breakdown
+                  {stateObj.name} ({code}) Clinic Jobs & Hourly Pay by Specialty
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Click any specialty below to filter {stateObj.name} openings on the interactive feed.
+                  Click any specialty below to filter {stateObj.name} jobs with full search filters.
                 </p>
               </div>
               <Link
-                href={`/salary-calculator`}
+                href="/salary-calculator"
                 className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 hover:text-teal-900"
               >
                 <DollarSign className="w-3.5 h-3.5" />
-                <span>Compare {code} City Pay Calculator →</span>
+                <span>Check {code} Hourly Pay Calculator →</span>
               </Link>
             </div>
 
@@ -202,7 +199,7 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
                   <div className="text-xs font-extrabold text-slate-900">{item.specialty}</div>
                   <div className="text-sm font-black text-teal-700">{item.payRange}</div>
                   <div className="text-[11px] font-semibold text-slate-500">
-                    {item.count} verified {code} jobs →
+                    {item.count} open {code} jobs →
                   </div>
                 </Link>
               ))}
@@ -214,13 +211,13 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
             <div className="lg:col-span-9 space-y-3">
               <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
                 <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
-                  All {stateJobs.length} NPI-Verified Clinical Openings in {stateObj.name} ({code})
+                  All {stateJobs.length} Open Clinic Jobs in {stateObj.name} ({code})
                 </h2>
                 <Link
                   href={`/?state=${code}`}
                   className="text-xs font-bold text-teal-700 hover:underline"
                 >
-                  Open in Advanced Filter View →
+                  Filter by Gender, Experience & Software →
                 </Link>
               </div>
 
@@ -234,16 +231,16 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
               <div className="bg-white rounded-2xl border border-teal-200 p-5 space-y-3 shadow-2xs">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
                   <Building2 className="w-3 h-3 text-emerald-600" />
-                  <span>{stateObj.name} Practice Owners</span>
+                  <span>{stateObj.name} Clinics</span>
                 </span>
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Own a Private Practice in {stateObj.name}?
+                  Hiring in {stateObj.name}?
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Verify your 10-digit NPI number and post unlimited openings in {cities.slice(0, 3).join(', ')} for 100% free.
+                  Save your clinic profile once and post unlimited free jobs in {cities.slice(0, 3).join(', ')}.
                 </p>
                 <Link
-                  href="/post-a-job"
+                  href={`/post-a-job?state=${code}`}
                   className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition-all"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
@@ -254,16 +251,16 @@ export default async function StateSEOLandingPage({ params }: PageProps) {
               <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-3">
                 <div className="flex items-center gap-1.5 text-teal-400 text-xs font-bold">
                   <Bell className="w-4 h-4" />
-                  <span>Free {stateObj.name} Email Alerts</span>
+                  <span>Free {stateObj.name} Job Alerts</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Get an instant email or browser alert whenever a private clinic in {stateObj.name} posts a new opening.
+                  Get a free email whenever a clinic in {stateObj.name} posts a new job matching your role.
                 </p>
                 <Link
                   href="/alerts"
                   className="w-full inline-flex items-center justify-center py-2 px-3 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs transition-colors"
                 >
-                  Activate {code} Job Alerts
+                  Turn On {code} Job Alerts
                 </Link>
               </div>
 

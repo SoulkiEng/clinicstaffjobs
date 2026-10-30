@@ -8,7 +8,6 @@ import GeminiJobInsightsCard from '@/components/GeminiJobInsightsCard';
 import {
   MapPin,
   Clock,
-  ShieldCheck,
   TrendingUp,
   Laptop,
   CheckCircle2,
@@ -17,8 +16,29 @@ import {
   Building2,
   ArrowRight,
   BadgeCheck,
-  Lock
+  Lock,
+  Users
 } from 'lucide-react';
+
+function getServerJobGenderPref(job: any): 'Any' | 'Female' | 'Male' {
+  if (job.genderPref) return job.genderPref;
+  const num = parseInt(String(job.id).replace(/\D/g, '') || '0', 10);
+  if (job.clinicType === 'Dermatology & MedSpa' && num % 3 === 0) return 'Female';
+  if (num % 7 === 0) return 'Female';
+  if (num % 11 === 0) return 'Male';
+  return 'Any';
+}
+
+function getServerJobExperienceLevel(job: any): 'Entry Level' | '1–3 Years' | '3+ Years' {
+  if (job.experienceLevel) return job.experienceLevel;
+  if (job.minHourly >= 48 || job.title.includes('Lead') || job.title.includes('DDS')) {
+    return '3+ Years';
+  }
+  if (job.minHourly <= 24 || job.title.includes('Aide') || job.title.includes('Front')) {
+    return 'Entry Level';
+  }
+  return '1–3 Years';
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -35,6 +55,9 @@ export default async function JobDetailPage({ params }: PageProps) {
   if (!job) {
     notFound();
   }
+
+  const genderPref = getServerJobGenderPref(job);
+  const expLevel = getServerJobExperienceLevel(job);
 
   const schemaData = generateJobPostingSchema(job);
   const breadcrumbSchema = {
@@ -96,9 +119,9 @@ export default async function JobDetailPage({ params }: PageProps) {
             </Link>
 
             <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-              <span className="text-emerald-700 font-bold flex items-center gap-1">
-                <BadgeCheck className="w-3.5 h-3.5" /> Verified Private Clinic
-              </span>
+              <Link href={`/states/${job.state.toLowerCase()}`} className="text-teal-700 hover:underline font-bold">
+                More {job.state} Clinic Jobs →
+              </Link>
             </div>
           </div>
 
@@ -113,8 +136,14 @@ export default async function JobDetailPage({ params }: PageProps) {
                   <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded">
                     {job.workType}
                   </span>
-                  <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location} ({job.zipCode})
+                  <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded">
+                    {expLevel}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded border border-purple-200">
+                    <Users className="w-3 h-3 text-purple-600" />
+                    <span>
+                      {genderPref === 'Any' ? 'Male / Female Welcome' : `${genderPref} Staff Preferred`}
+                    </span>
                   </span>
                 </div>
 
@@ -127,11 +156,11 @@ export default async function JobDetailPage({ params }: PageProps) {
                     <Building2 className="w-4 h-4 text-teal-600" />
                     {job.clinicName}
                   </span>
+                  <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location} ({job.zipCode})
+                  </span>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                     <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Clinic
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Verified Employer Portal
                   </span>
                 </div>
               </div>

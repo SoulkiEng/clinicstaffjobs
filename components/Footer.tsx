@@ -70,9 +70,9 @@ export default function Footer() {
             <ul className="space-y-2 text-xs">
               <li><Link href="/post-a-job" className="text-teal-400 font-bold hover:underline">+ Post a Job (100% Free)</Link></li>
               <li><Link href="/talent" className="text-emerald-400 font-semibold hover:underline">Browse Available Candidates</Link></li>
-              <li><Link href="/employers" className="hover:text-teal-400 transition-colors">Why Employers Use Us</Link></li>
-              <li><Link href="/dashboard/employer" className="hover:text-teal-400 transition-colors">Employer Account & My Jobs</Link></li>
-              <li><Link href="/signup" className="hover:text-teal-400 transition-colors">Create Free Employer Account</Link></li>
+              <li><Link href="/employers" className="hover:text-teal-400 transition-colors">Why Clinics Use Us</Link></li>
+              <li><Link href="/dashboard/employer" className="hover:text-teal-400 transition-colors">Employer Portal & My Jobs</Link></li>
+              <li><Link href="/signup?role=employer" className="hover:text-teal-400 transition-colors">Create Free Employer Account</Link></li>
             </ul>
           </div>
 
@@ -86,7 +86,7 @@ export default function Footer() {
               <li><Link href="/salary-calculator" className="hover:text-teal-400 transition-colors">Hourly Salary Calculator</Link></li>
               <li><Link href="/alerts" className="hover:text-teal-400 transition-colors">Free Email Job Alerts</Link></li>
               <li><Link href="/career-resources" className="hover:text-teal-400 transition-colors">Career & State License Advice</Link></li>
-              <li><Link href="/signup" className="hover:text-teal-400 transition-colors">Create Free Job Seeker Account</Link></li>
+              <li><Link href="/signup?role=candidate" className="hover:text-teal-400 transition-colors">Create Free Job Seeker Account</Link></li>
             </ul>
           </div>
 

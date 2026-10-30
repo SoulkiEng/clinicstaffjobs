@@ -65,10 +65,11 @@ export default function LoginPage() {
         setErrorMsg(res.error || 'Could not sign in. Please check your email.');
         return;
       }
+      const actualRole = res.role || role;
       if (redirectTo && redirectTo.startsWith('/')) {
         router.push(redirectTo);
       } else {
-        router.push(role === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
+        router.push(actualRole === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
       }
     } finally {
       setIsSubmitting(false);
@@ -169,6 +170,7 @@ export default function LoginPage() {
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
                   id="login-email"
+                  name="email"
                   type="email"
                   required
                   autoComplete="email"
@@ -200,6 +202,7 @@ export default function LoginPage() {
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
                   id="login-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
@@ -231,7 +234,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Sign In as {role === 'candidate' ? 'Job Seeker' : 'Employer'}</span>
+                  <span>Sign In</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -242,8 +245,8 @@ export default function LoginPage() {
             <p className="text-xs text-slate-600">
               New to ClinicStaffJobs?{' '}
               <Link
-                href={`/signup${
-                  redirectTo ? `?role=${role}&redirect=${encodeURIComponent(redirectTo)}` : ''
+                href={`/signup?role=${role}${
+                  redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ''
                 }`}
                 className="text-teal-600 font-bold hover:underline"
               >
