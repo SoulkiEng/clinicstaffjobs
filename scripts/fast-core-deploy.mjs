@@ -37,7 +37,7 @@ const ftpHost = '31.170.166.176';
 
 execSync(`curl.exe -s -T "${coreZip}" -u "${ftpUser}:${ftpPass}" "ftp://${ftpHost}/core.zip"`, { stdio: 'inherit' });
 execSync(`curl.exe -s -T "${phpScript}" -u "${ftpUser}:${ftpPass}" "ftp://${ftpHost}/unzip-core.php"`, { stdio: 'inherit' });
-const res = execSync(`curl.exe -s -L -k "https://clinicstaffjobs.com/unzip-core.php"`, { encoding: 'utf-8' });
+const res = execSync(`curl.exe -s -L -k --resolve "clinicstaffjobs.com:443:${ftpHost}" "https://clinicstaffjobs.com/unzip-core.php"`, { encoding: 'utf-8' });
 console.log('Server response:', res);
 
 // Also upload /jobs/view/index.html so dynamic job-live-* pages work on static export
