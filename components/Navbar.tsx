@@ -134,7 +134,7 @@ export default function Navbar() {
             )}
 
             <Link
-              href="/post-a-job"
+              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold whitespace-nowrap shadow-xs transition-all"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
@@ -145,7 +145,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <div className="flex xl:hidden items-center gap-2">
             <Link
-              href="/post-a-job"
+              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
               className="sm:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-bold whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -227,7 +227,7 @@ export default function Navbar() {
             )}
 
             <Link
-              href="/post-a-job"
+              href={user ? '/post-a-job' : '/signup?role=employer&redirect=/post-a-job'}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-teal-600 text-white font-extrabold text-sm"
             >

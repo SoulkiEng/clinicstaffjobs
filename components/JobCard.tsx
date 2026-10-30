@@ -23,8 +23,9 @@ import {
   Send,
   Check,
   Scale,
-  Mail,
-  Users
+  Users,
+  UserPlus,
+  FileText
 } from 'lucide-react';
 
 interface JobCardProps {
@@ -63,29 +64,20 @@ export function formatRelativeTime(isoDate: string): string {
 }
 
 export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps) {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [isCompared, setIsCompared] = useState(false);
   const [justLiked, setJustLiked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Quick Inline Apply State (Automatically Pre-filled from Logged-In User Profile!)
-  const [applicantName, setApplicantName] = useState('');
-  const [applicantEmail, setApplicantEmail] = useState('');
-  const [applicantPhone, setApplicantPhone] = useState('');
+  // Only ask for missing profile fields if logged in
+  const [missingPhone, setMissingPhone] = useState('');
+  const [missingLicense, setMissingLicense] = useState('');
   const [applicantNote, setApplicantNote] = useState('');
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [appliedSuccess, setAppliedSuccess] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setApplicantName(user.name || '');
-      setApplicantEmail(user.email || '');
-      setApplicantPhone(user.phone || '');
-    }
-  }, [user]);
 
   useEffect(() => {
     const syncState = () => {
@@ -166,7 +158,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
   const handleGeminiCoverNote = async () => {
     setIsGeneratingNote(true);
     const note = await generateCoverNoteWithGemini({
-      candidateName: applicantName || user?.name || 'Candidate',
+      candidateName: user?.name || 'Candidate',
       candidateRole: user?.specialty || job.title,
       jobTitle: job.title,
       clinicName: job.clinicName,
@@ -176,10 +168,21 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     setIsGeneratingNote(false);
   };
 
-  const handleQuickApplySubmit = async (e: React.FormEvent) => {
+  const handleAuthenticatedApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!applicantName.trim() || !applicantEmail.trim()) return;
+    if (!user) return;
     setIsSubmitting(true);
+
+    const finalPhone = user.phone || missingPhone.trim();
+    const finalLicense = user.licenseNumber || missingLicense.trim() || 'Verified Profile';
+
+    // Save any newly provided missing fields to the user's profile so they never have to type them again!
+    if ((!user.phone && missingPhone.trim()) || (!user.licenseNumber && missingLicense.trim())) {
+      await updateProfile({
+        phone: finalPhone || user.phone,
+        licenseNumber: finalLicense !== 'Verified Profile' ? finalLicense : user.licenseNumber,
+      });
+    }
 
     const appRecord = {
       id: `app-${Date.now()}`,
@@ -187,14 +190,16 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
       job_title: job.title,
       clinic_name: job.clinicName,
       location: job.location,
-      candidate_name: applicantName.trim(),
-      candidate_email: applicantEmail.trim(),
-      candidate_phone: applicantPhone.trim(),
-      license_number: user?.licenseNumber || 'Verified Candidate',
-      experience_years: user?.yearsExperience ? `${user.yearsExperience} Years` : 'Experienced',
+      candidate_name: user.name,
+      candidate_email: user.email,
+      candidate_phone: finalPhone || '(Saved in Profile)',
+      license_number: finalLicense,
+      experience_years: user.yearsExperience || 'Experienced',
       desired_pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
+      pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
+      resume_file: user.resumeFileName || `${user.name.replace(/\s+/g, '_')}_Resume.pdf`,
       cover_note: applicantNote.trim(),
-      status: 'Application Sent to Clinic',
+      status: 'Application Sent',
       created_at: new Date().toISOString(),
     };
 
@@ -217,8 +222,8 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     }
 
     try {
-      const existing = JSON.parse(localStorage.getItem('my_submitted_applications') || '[]');
-      localStorage.setItem('my_submitted_applications', JSON.stringify([appRecord, ...existing]));
+      const existing = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
+      localStorage.setItem('my_applied_jobs', JSON.stringify([appRecord, ...existing]));
     } catch {
       // ignore
     }
@@ -227,8 +232,8 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     setAppliedSuccess(true);
   };
 
-  const genderPref = getJobGenderPref(job);
-  const expLevel = getJobExperienceLevel(job);
+  const genderPref = (job as any).genderPref || getJobGenderPref(job);
+  const expLevel = (job as any).experienceLevel || getJobExperienceLevel(job);
 
   const categoryStyles: Record<string, { badge: string; avatar: string }> = {
     Dental: {
@@ -338,7 +343,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
 
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700">
                   <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                  Direct Employer (No Agency)
+                  Verified Clinic
                 </span>
               </div>
             </div>
@@ -385,32 +390,42 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               <span className="text-xs font-bold text-slate-500">/ hour</span>
             </div>
             <div className="text-[11px] font-bold text-emerald-700">
-              Full-Time / Part-Time Pay
+              {job.workType} Pay
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-all cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>1-Click Apply</span>
-            </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Apply Now</span>
+              </button>
+            ) : (
+              <Link
+                href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white text-xs font-bold transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Apply Now</span>
+              </Link>
+            )}
 
             <Link
               href={`/jobs/${job.id}`}
               className="inline-flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all"
             >
-              <span>View Job</span>
+              <span>View Details</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Expandable Quick Preview & 1-Click Apply (Uses Saved User Profile Automatically) */}
+      {/* Expandable Summary & Account-Gated Application */}
       {isExpanded && (
         <div className="social-drawer-enter mt-4 pt-4 border-t border-slate-100 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
@@ -435,69 +450,105 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               </div>
             </div>
 
-            {/* 1-Click Apply Box (Pre-filled if Logged In) */}
-            <div className="bg-white rounded-xl p-4 border border-teal-200 space-y-3">
-              {appliedSuccess ? (
+            {/* Right Box: Account Required if Logged Out, or 1-Click Saved Profile Apply if Logged In */}
+            <div className="bg-white rounded-xl p-4 border border-teal-200 space-y-3 flex flex-col justify-center">
+              {!user ? (
+                <div className="space-y-3 text-center py-2">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-extrabold text-slate-900">
+                      Create Your Free Account to Apply
+                    </h4>
+                    <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                      Save your profile and CV once so we can match you with {job.clinicName} and track your application status.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                    <Link
+                      href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition-colors"
+                    >
+                      Create Free Job Seeker Account →
+                    </Link>
+                    <Link
+                      href={`/login?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                </div>
+              ) : appliedSuccess ? (
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs font-bold">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>
-                      Application sent to {job.clinicName}! Saved in your My Applied Jobs tab.
+                      Application sent to {job.clinicName}! You can track its status in your Applied Jobs tab.
                     </span>
                   </div>
-                  <a
-                    href={`mailto:${job.applyEmail}?subject=${encodeURIComponent(
-                      `Job Application: ${job.title} — ${applicantName}`
-                    )}`}
+                  <Link
+                    href="/dashboard/candidate"
                     className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-900 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
                   >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Also Open Direct Email to Clinic →</span>
-                  </a>
+                    <span>View in My Applied Jobs →</span>
+                  </Link>
                 </div>
               ) : (
-                <form onSubmit={handleQuickApplySubmit} className="space-y-2.5">
-                  <div className="flex items-center justify-between flex-wrap gap-1">
-                    <span className="text-xs font-extrabold text-slate-900">
-                      Quick Apply to {job.clinicName}
+                <form onSubmit={handleAuthenticatedApply} className="space-y-3">
+                  <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div className="truncate">
+                        <span className="font-extrabold text-slate-900">{user.name}</span>
+                        <span className="text-slate-600"> • {user.resumeFileName || 'Saved_CV.pdf'}</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
+                      Saved Profile
                     </span>
-                    {user && (
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        ✓ Pre-filled from Your Account & CV
-                      </span>
-                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Your Full Name *"
-                      value={applicantName}
-                      onChange={(e) => setApplicantName(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
-                    />
-                    <input
-                      type="email"
-                      required
-                      placeholder="Your Email *"
-                      value={applicantEmail}
-                      onChange={(e) => setApplicantEmail(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number"
-                      value={applicantPhone}
-                      onChange={(e) => setApplicantPhone(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
-                    />
-                  </div>
+                  {/* Only ask for Phone or License if missing from the user's saved profile! */}
+                  {(!user.phone || !user.licenseNumber) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {!user.phone && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Add Phone (Will be saved to profile) *
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            placeholder="(214) 555-0192"
+                            value={missingPhone}
+                            onChange={(e) => setMissingPhone(e.target.value)}
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
+                          />
+                        </div>
+                      )}
+                      {!user.licenseNumber && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            License # (Optional - Saved to profile)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. TX-RDH-94821"
+                            value={missingLicense}
+                            onChange={(e) => setMissingLicense(e.target.value)}
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-slate-600">
-                        Short Message to Clinic (Optional)
+                        Optional Note to Clinic
                       </label>
                       <button
                         type="button"
@@ -511,7 +562,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                     </div>
                     <textarea
                       rows={2}
-                      placeholder="Click 'Write with Gemini AI' or type a short note..."
+                      placeholder="Click 'Write with Gemini AI' or submit directly..."
                       value={applicantNote}
                       onChange={(e) => setApplicantNote(e.target.value)}
                       className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
@@ -523,11 +574,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                     disabled={isSubmitting}
                     className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                   >
-                    {isSubmitting
-                      ? 'Sending Application...'
-                      : user
-                      ? `Submit 1-Click Application with Saved CV →`
-                      : `Send Application to ${job.clinicName} →`}
+                    {isSubmitting ? 'Submitting Application...' : 'Submit Application with Saved Profile →'}
                   </button>
                 </form>
               )}
@@ -543,7 +590,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
           onClick={() => setIsExpanded(!isExpanded)}
           className="inline-flex items-center gap-1 font-bold text-teal-700 hover:text-teal-900 transition-colors cursor-pointer"
         >
-          <span>{isExpanded ? 'Hide Job Summary' : 'Show Quick Summary & 1-Click Apply'}</span>
+          <span>{isExpanded ? 'Hide Job Summary' : 'Preview Job Summary & Benefits'}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
 

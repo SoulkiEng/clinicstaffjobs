@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserRole } from '@/context/AuthContext';
@@ -22,12 +22,27 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [role, setRole] = useState<UserRole>('candidate');
+  const [redirectTo, setRedirectTo] = useState<string>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const r = params.get('role');
+      const red = params.get('redirect');
+      if (r === 'employer' || r === 'candidate') {
+        setRole(r);
+      }
+      if (red) {
+        setRedirectTo(red);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +65,11 @@ export default function LoginPage() {
         setErrorMsg(res.error || 'Could not sign in. Please check your email.');
         return;
       }
-      router.push(role === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
+      if (redirectTo && redirectTo.startsWith('/')) {
+        router.push(redirectTo);
+      } else {
+        router.push(role === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -143,15 +162,19 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-bold text-slate-700 mb-1.5">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
+                  id="login-email"
                   type="email"
                   required
                   autoComplete="email"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@email.com"
@@ -162,7 +185,7 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700">
+                <label htmlFor="login-password" className="block text-xs font-bold text-slate-700">
                   Password
                 </label>
                 <button
@@ -176,6 +199,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
@@ -188,6 +212,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -216,7 +241,12 @@ export default function LoginPage() {
           <div className="text-center pt-3 border-t border-slate-100">
             <p className="text-xs text-slate-600">
               New to ClinicStaffJobs?{' '}
-              <Link href="/signup" className="text-teal-600 font-bold hover:underline">
+              <Link
+                href={`/signup${
+                  redirectTo ? `?role=${role}&redirect=${encodeURIComponent(redirectTo)}` : ''
+                }`}
+                className="text-teal-600 font-bold hover:underline"
+              >
                 Create a Free Account
               </Link>
             </p>

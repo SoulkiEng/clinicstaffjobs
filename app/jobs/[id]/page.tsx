@@ -131,7 +131,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                     <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Clinic
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Direct Clinic Hiring
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Verified Employer Portal
                   </span>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                     href="#apply-section"
                     className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
                   >
-                    1-Click Apply ↓
+                    Apply Now ↓
                   </a>
                 </div>
               </div>

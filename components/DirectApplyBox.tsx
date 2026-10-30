@@ -10,11 +10,13 @@ import {
   Send,
   CheckCircle2,
   Sparkles,
-  Mail,
   ShieldCheck,
   Loader2,
   Bookmark,
-  FileText
+  FileText,
+  UserPlus,
+  Upload,
+  Check
 } from 'lucide-react';
 
 interface DirectApplyBoxProps {
@@ -22,12 +24,10 @@ interface DirectApplyBoxProps {
 }
 
 export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
-  const { user } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [license, setLicense] = useState('');
-  const [experience, setExperience] = useState('3+ Years Experience');
+  const { user, updateProfile } = useAuth();
+  const [missingPhone, setMissingPhone] = useState('');
+  const [missingLicense, setMissingLicense] = useState('');
+  const [missingResume, setMissingResume] = useState('');
   const [note, setNote] = useState('');
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,22 +35,13 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setEmail(user.email || '');
-      setPhone(user.phone || '');
-      setLicense(user.licenseNumber || '');
-      if (user.yearsExperience) {
-        setExperience(`${user.yearsExperience}+ Years Experience`);
-      }
-    }
     try {
       const savedIds: string[] = JSON.parse(localStorage.getItem('saved_clinic_jobs') || '[]');
       setIsSaved(savedIds.includes(job.id));
     } catch {
       // ignore
     }
-  }, [user, job.id]);
+  }, [job.id]);
 
   const toggleSave = () => {
     try {
@@ -73,7 +64,7 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
   const handleGeminiCoverNote = async () => {
     setIsGeneratingNote(true);
     const generated = await generateCoverNoteWithGemini({
-      candidateName: name || user?.name || 'Candidate',
+      candidateName: user?.name || 'Candidate',
       candidateRole: user?.specialty || job.title,
       jobTitle: job.title,
       clinicName: job.clinicName,
@@ -85,24 +76,45 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!user) return;
 
     setIsSubmitting(true);
+    const finalPhone = user.phone || missingPhone.trim();
+    const finalLicense = user.licenseNumber || missingLicense.trim() || 'Active State License';
+    const finalResume =
+      user.resumeFileName || missingResume || `${user.name.replace(/\s+/g, '_')}_Resume.pdf`;
+
+    // Save any newly provided missing fields to the user's profile so they never have to enter them again
+    if (
+      (!user.phone && missingPhone.trim()) ||
+      (!user.licenseNumber && missingLicense.trim()) ||
+      (!user.resumeFileName && missingResume)
+    ) {
+      await updateProfile({
+        phone: finalPhone || user.phone,
+        licenseNumber: finalLicense !== 'Active State License' ? finalLicense : user.licenseNumber,
+        resumeFileName: finalResume,
+        resumeUpdatedAt: 'Updated Today',
+      });
+    }
+
     const appRecord = {
       id: `app-${Date.now()}`,
       job_id: job.id,
       job_title: job.title,
       clinic_name: job.clinicName,
       location: job.location,
-      candidate_name: name.trim(),
-      candidate_email: email.trim(),
-      candidate_phone: phone.trim(),
-      license_number: license.trim() || 'Active State License',
-      experience_years: experience,
+      candidate_name: user.name,
+      candidate_email: user.email,
+      candidate_phone: finalPhone || '(Saved in Profile)',
+      license_number: finalLicense,
+      experience_years: user.yearsExperience || '3+ Years',
       desired_pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
+      pay: `$${job.minHourly} - $${job.maxHourly}/hr`,
+      resume_file: finalResume,
       cover_note: note.trim(),
       is_vip: true,
-      status: 'Application Sent to Clinic',
+      status: 'Application Sent',
       created_at: new Date().toISOString(),
     };
 
@@ -126,8 +138,8 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
     }
 
     try {
-      const existing = JSON.parse(localStorage.getItem('my_submitted_applications') || '[]');
-      localStorage.setItem('my_submitted_applications', JSON.stringify([appRecord, ...existing]));
+      const existing = JSON.parse(localStorage.getItem('my_applied_jobs') || '[]');
+      localStorage.setItem('my_applied_jobs', JSON.stringify([appRecord, ...existing]));
     } catch {
       // ignore
     }
@@ -146,26 +158,19 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <h3 className="text-2xl font-extrabold text-slate-900">
-          Application Sent to {job.clinicName}!
+          Application Submitted to {job.clinicName}!
         </h3>
         <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-          Thank you, <strong className="text-slate-900">{name}</strong>. Your application for{' '}
-          <strong className="text-slate-900">{job.title}</strong> (${job.minHourly}–${job.maxHourly}/hr) has been saved to your account and sent to <strong className="text-teal-700">{job.applyEmail}</strong>.
+          Thank you, <strong className="text-slate-900">{user?.name}</strong>. Your saved profile and CV have been sent for{' '}
+          <strong className="text-slate-900">{job.title}</strong> (${job.minHourly}–${job.maxHourly}/hr) and added to your Applied Jobs portal.
         </p>
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/dashboard/candidate"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
           >
-            <span>View in My Applied Jobs →</span>
+            <span>Track in My Applied Jobs →</span>
           </Link>
-          <a
-            href={`mailto:${job.applyEmail}?subject=Application: ${encodeURIComponent(job.title)} - ${encodeURIComponent(name)}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Email Clinic Directly</span>
-          </a>
         </div>
       </div>
     );
@@ -177,10 +182,10 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
       <div className="bg-slate-900 text-white px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-400">
-            <ShieldCheck className="w-3.5 h-3.5" /> 100% Free Direct Application
+            <ShieldCheck className="w-3.5 h-3.5" /> Verified Job Application
           </span>
           <h3 className="text-lg sm:text-xl font-extrabold text-white mt-0.5">
-            Apply to {job.clinicName}
+            Apply for {job.title} at {job.clinicName}
           </h3>
         </div>
 
@@ -198,147 +203,177 @@ export default function DirectApplyBox({ job }: DirectApplyBoxProps) {
         </button>
       </div>
 
-      <form onSubmit={handleApply} className="p-6 sm:p-8 space-y-5">
-        {user ? (
-          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between flex-wrap gap-2 text-xs text-emerald-900 font-semibold">
-            <span className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>
-                Signed in as <strong>{user.name}</strong> — Your saved profile & CV ({user.resumeFileName || 'Resume.pdf'}) are attached!
-              </span>
-            </span>
-            <Link href="/dashboard/candidate" className="text-teal-700 font-bold underline">
-              Edit Profile / CV
+      {/* If User is NOT Logged In -> Require Account Creation First */}
+      {!user ? (
+        <div className="p-6 sm:p-8 text-center space-y-5">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center mx-auto">
+            <UserPlus className="w-7 h-7" />
+          </div>
+
+          <div className="max-w-lg mx-auto space-y-2">
+            <h4 className="text-xl font-extrabold text-slate-900">
+              Create Your Free Account to Apply for This Job
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              To match you with <strong>{job.clinicName}</strong> and let you track your application status, please create a free Job Seeker account once. Your profile and CV are saved so you never have to re-type your details again.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+            <Link
+              href={`/signup?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm shadow-xs transition-all"
+            >
+              Create Free Job Seeker Account & Apply →
+            </Link>
+            <Link
+              href={`/login?role=candidate&redirect=${encodeURIComponent(`/jobs/${job.id}`)}`}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition-all"
+            >
+              Already Have an Account? Sign In
             </Link>
           </div>
-        ) : (
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-700">
-            <span>Want to save your CV so you never have to type your info again?</span>
-            <Link href="/signup" className="text-teal-600 font-bold underline">
-              Create Free Account (20 Sec) →
+        </div>
+      ) : (
+        /* Logged-In User -> Uses Saved Profile Automatically, Only Asks for Any Missing Info */
+        <form onSubmit={handleApply} className="p-6 sm:p-8 space-y-5">
+          <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div className="text-xs space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-sm text-slate-900">{user.name}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    ✓ Saved Profile Ready
+                  </span>
+                </div>
+                <p className="text-slate-600">
+                  {user.email} • {user.specialty || 'Healthcare Professional'} • {user.location || 'USA'}
+                </p>
+                <p className="font-bold text-teal-800">
+                  Attached CV: {user.resumeFileName || `${user.name.replace(/\s+/g, '_')}_Resume.pdf`}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/candidate"
+              className="text-xs font-bold text-teal-700 hover:text-teal-900 underline shrink-0"
+            >
+              Update Profile / CV
             </Link>
           </div>
-        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Smart Missing Fields Section: ONLY shown if something is missing from the user's profile! */}
+          {(!user.phone || !user.licenseNumber || !user.resumeFileName) && (
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+              <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-teal-600" />
+                <span>Complete Missing Info Once (Automatically saved to your profile for future jobs):</span>
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                {!user.phone && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Your Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      autoComplete="tel"
+                      placeholder="(214) 555-0192"
+                      value={missingPhone}
+                      onChange={(e) => setMissingPhone(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                )}
+
+                {!user.licenseNumber && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      License / Certificate # (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Active State License"
+                      value={missingLicense}
+                      onChange={(e) => setMissingLicense(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                )}
+
+                {!user.resumeFileName && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Upload Your CV / Resume (Saved to your account)
+                    </label>
+                    <label className="w-full px-4 py-2.5 rounded-xl border border-dashed border-teal-400 bg-white hover:bg-teal-50 text-xs font-bold text-teal-800 flex items-center justify-center gap-2 cursor-pointer">
+                      <Upload className="w-4 h-4 text-teal-600" />
+                      <span>{missingResume ? `Attached: ${missingResume}` : 'Choose CV File (PDF / DOCX)'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) setMissingResume(f.name);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Your Full Name *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Jessica Taylor"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-700">
+                Message to Hiring Clinic (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={handleGeminiCoverNote}
+                disabled={isGeneratingNote}
+                className="inline-flex items-center gap-1 text-xs font-extrabold text-teal-600 hover:text-teal-800 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isGeneratingNote ? 'Gemini AI Writing...' : '✨ Write Message with Gemini AI'}</span>
+              </button>
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Click 'Write Message with Gemini AI' above or submit directly..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
               className={inputClass}
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="you@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              required
-              placeholder="(214) 555-0192"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              License / Certificate (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Active State License"
-              value={license}
-              onChange={(e) => setLicense(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Experience Level
-            </label>
-            <select
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-              className={inputClass}
-            >
-              <option value="Entry Level / New Grad">Entry Level / New Grad</option>
-              <option value="1–3 Years Experience">1–3 Years Experience</option>
-              <option value="3+ Years Experience">3+ Years Experience</option>
-              <option value="5+ Years Senior Experience">5+ Years Senior Experience</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold text-slate-700">
-              Message to Hiring Clinic (Optional)
-            </label>
-            <button
-              type="button"
-              onClick={handleGeminiCoverNote}
-              disabled={isGeneratingNote}
-              className="inline-flex items-center gap-1 text-xs font-extrabold text-teal-600 hover:text-teal-800 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{isGeneratingNote ? 'Gemini AI Writing...' : '✨ Write Message with Gemini AI'}</span>
-            </button>
-          </div>
-          <textarea
-            rows={3}
-            placeholder="Click 'Write Message with Gemini AI' above or write a short note..."
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-extrabold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Sending Application...</span>
+                <span>Submitting Application...</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                <span>Submit Application to {job.clinicName}</span>
+                <span>Submit Application with My Saved Profile →</span>
               </>
             )}
           </button>
-        </div>
-      </form>
+        </form>
+      )}
     </div>
   );
 }

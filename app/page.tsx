@@ -529,7 +529,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-600">
-                Search verified dental, medical, vision, physical therapy, and dermatology clinics across all 52 states. Compare hourly pay and apply directly in 1 click.
+                Search verified dental, medical, vision, physical therapy, and dermatology clinics across all 52 states. Save your profile once to match with clinics and apply in 1 click.
               </p>
             </div>
 
@@ -539,7 +539,7 @@ export default function HomePage() {
                 <BadgeCheck className="w-4 h-4 text-emerald-600" /> Verified Private Clinics
               </span>
               <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-2xs">
-                <ShieldCheck className="w-4 h-4 text-teal-600" /> 1-Click Direct Apply
+                <ShieldCheck className="w-4 h-4 text-teal-600" /> Save Profile & CV Once
               </span>
             </div>
           </div>
