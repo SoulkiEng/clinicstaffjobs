@@ -17,12 +17,13 @@ export function generateJobPostingSchema(job: Job, baseUrl: string = 'https://cl
     hiringOrganization: {
       '@type': 'Organization',
       name: job.clinicName,
-      sameAs: job.applyUrl
+      sameAs: job.applyUrl || baseUrl
     },
     jobLocation: {
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
+        streetAddress: `${job.clinicName} Outpatient Suite`,
         addressLocality: job.city,
         addressRegion: job.state,
         postalCode: job.zipCode,

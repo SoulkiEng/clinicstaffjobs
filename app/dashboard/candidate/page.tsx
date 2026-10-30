@@ -281,7 +281,7 @@ export default function CandidateDashboardPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Mobile Number (for SMS & WhatsApp Job Alerts)
+                  Direct Contact Phone (for Practice Interview Calls)
                 </label>
                 <input
                   type="tel"
@@ -293,15 +293,16 @@ export default function CandidateDashboardPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Clinical Resume (PDF)
+                  Clinical Resume / CV (PDF or DOCX)
                 </label>
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-teal-500 cursor-pointer transition-colors bg-slate-50">
-                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                  <p className="text-xs font-semibold text-slate-700">
-                    {name.replace(/\s+/g, '_')}_Resume.pdf
+                <label className="block border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-teal-500 cursor-pointer transition-colors bg-slate-50">
+                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" />
+                  <Upload className="w-6 h-6 text-teal-600 mx-auto mb-1" />
+                  <p className="text-xs font-bold text-slate-800">
+                    Click to Upload or Replace ({name.replace(/\s+/g, '_')}_Resume.pdf)
                   </p>
-                  <p className="text-[11px] text-slate-500">Verified clinical resume ready for 1-click apply</p>
-                </div>
+                  <p className="text-[11px] text-slate-500">Verified clinical resume ready for 1-click direct apply</p>
+                </label>
               </div>
 
               <button

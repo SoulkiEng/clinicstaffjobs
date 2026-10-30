@@ -132,17 +132,17 @@ export default function EmployerDashboardPage() {
         if (data && data.length > 0) {
           const dbApps = data.map((a: any) => ({
             id: a.id,
-            name: a.candidate_name,
-            role: 'Verified Clinician',
-            license: a.license_number || 'Active State License',
-            experience: a.experience_years || '3+ Years Experience',
+            name: a.candidate_name || a.full_name || 'Verified Clinician',
+            role: a.job_title || 'Verified Clinician',
+            license: a.license_number || a.license_status || 'Active State License',
+            experience: a.experience_years || a.experience || '3+ Years Experience',
             desiredPay: a.desired_pay || '$45/hr',
-            email: a.candidate_email,
-            phone: a.candidate_phone || '(555) 019-2831',
+            email: a.candidate_email || a.email || 'clinician@email.com',
+            phone: a.candidate_phone || a.phone || '(555) 019-2831',
             isVip: Boolean(a.is_vip),
-            appliedFor: `Job #${a.job_id}`,
+            appliedFor: a.job_title || `Job #${a.job_id}`,
             appliedDate: 'Recent',
-            status: a.status || 'New Inquiry'
+            status: a.status || 'New Direct Application'
           }));
           setApplicants((prev) => {
             const seen = new Set(dbApps.map((d: any) => d.id));
@@ -322,8 +322,8 @@ export default function EmployerDashboardPage() {
                     </span>
 
                     {job.isFeatured && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                        <Sparkles className="w-3 h-3 text-amber-500" /> Sponsored Slot Active
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                        <Sparkles className="w-3 h-3 text-teal-600" /> Priority Verified Slot Active (Free)
                       </span>
                     )}
 
