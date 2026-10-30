@@ -1,28 +1,128 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { SEED_JOBS, Job } from '@/data/jobs';
+import { ALL_JOBS, Job } from '@/data/jobs';
+import { supabase } from '@/lib/supabase';
 import JobCard from '@/components/JobCard';
 import SalaryCalculator from '@/components/SalaryCalculator';
-import { Search, MapPin, DollarSign, Filter, Sparkles, Bell, ShieldCheck, PlusCircle, CheckCircle2 } from 'lucide-react';
+import {
+  Search,
+  MapPin,
+  DollarSign,
+  Filter,
+  Sparkles,
+  Bell,
+  ShieldCheck,
+  PlusCircle,
+  CheckCircle2,
+  ChevronDown,
+  RefreshCw
+} from 'lucide-react';
+
+function mapDbJob(raw: any): Job {
+  return {
+    id: raw.id,
+    title: raw.title,
+    clinicName: raw.clinic_name,
+    clinicType: raw.clinic_type,
+    location: raw.location,
+    city: raw.city,
+    state: raw.state,
+    zipCode: raw.zip_code,
+    workType: raw.work_type || 'Full-time',
+    minHourly: Number(raw.min_hourly),
+    maxHourly: Number(raw.max_hourly),
+    payPeriod: raw.pay_period || 'hour',
+    payComparison: raw.pay_comparison || '+16% Above City Avg',
+    isFeatured: Boolean(raw.is_featured),
+    isUrgent: Boolean(raw.is_urgent),
+    verifiedActive: Boolean(raw.verified_active),
+    appointmentTime: raw.appointment_time,
+    softwareUsed: Array.isArray(raw.software_used) ? raw.software_used : [],
+    benefits: Array.isArray(raw.benefits) ? raw.benefits : [],
+    description: raw.description,
+    responsibilities: Array.isArray(raw.responsibilities) ? raw.responsibilities : [],
+    qualifications: Array.isArray(raw.qualifications) ? raw.qualifications : [],
+    applyEmail: raw.apply_email,
+    applyUrl: raw.apply_url || '',
+    postedDate: raw.created_at || new Date().toISOString(),
+  };
+}
 
 export default function HomePage() {
+  const [jobs, setJobs] = useState<Job[]>(ALL_JOBS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [minPay, setMinPay] = useState<number>(0);
+  const [visibleCount, setVisibleCount] = useState<number>(25);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const categories = ['All', 'Dental', 'Physical Therapy', 'Vision', 'Dermatology & MedSpa', 'Family Medicine'];
-  const locations = ['All', 'Dallas, TX', 'Houston, TX', 'Miami, FL', 'Orlando, FL', 'Atlanta, GA', 'Phoenix, AZ', 'Austin, TX', 'Tampa, FL'];
+
+  // Dynamically extract all available US Metros from the jobs list
+  const availableLocations = useMemo(() => {
+    const locSet = new Set<string>();
+    jobs.forEach((j) => {
+      if (j.location) locSet.add(j.location);
+    });
+    return ['All', ...Array.from(locSet).sort()];
+  }, [jobs]);
+
+  // Fetch live jobs from Supabase & localStorage on client mount
+  useEffect(() => {
+    async function loadLiveFeed() {
+      try {
+        setIsRefreshing(true);
+
+        // 1. Fetch live jobs from Supabase
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*')
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(800);
+
+        if (data && data.length > 0) {
+          const liveMapped = data.map(mapDbJob);
+
+          // 2. Fetch locally posted jobs from localStorage (if any)
+          const localRaw = typeof window !== 'undefined' ? localStorage.getItem('my_posted_jobs') : null;
+          const localJobs = localRaw ? JSON.parse(localRaw).map(mapDbJob) : [];
+
+          // Merge: Locally created jobs at top, then Supabase records, then remaining ALL_JOBS
+          const seenIds = new Set<string>();
+          const merged: Job[] = [];
+
+          [...localJobs, ...liveMapped, ...ALL_JOBS].forEach((j) => {
+            if (!seenIds.has(j.id)) {
+              seenIds.add(j.id);
+              merged.push(j);
+            }
+          });
+
+          setJobs(merged);
+        }
+      } catch (err) {
+        console.warn('Network note loading live jobs:', err);
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+
+    loadLiveFeed();
+  }, []);
 
   const filteredJobs = useMemo(() => {
-    return SEED_JOBS.filter((job) => {
+    return jobs.filter((job) => {
+      const term = searchTerm.toLowerCase();
       const matchesSearch =
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.clinicName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.softwareUsed.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()));
+        !searchTerm ||
+        job.title.toLowerCase().includes(term) ||
+        job.clinicName.toLowerCase().includes(term) ||
+        job.description.toLowerCase().includes(term) ||
+        job.softwareUsed.some((s) => s.toLowerCase().includes(term));
 
       const matchesCategory = selectedCategory === 'All' || job.clinicType === selectedCategory;
       const matchesLocation = selectedLocation === 'All' || job.location === selectedLocation;
@@ -35,7 +135,15 @@ export default function HomePage() {
       if (!a.isFeatured && b.isFeatured) return 1;
       return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime();
     });
-  }, [searchTerm, selectedCategory, selectedLocation, minPay]);
+  }, [jobs, searchTerm, selectedCategory, selectedLocation, minPay]);
+
+  const displayedJobs = useMemo(() => {
+    return filteredJobs.slice(0, visibleCount);
+  }, [filteredJobs, visibleCount]);
+
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 25);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
@@ -82,7 +190,10 @@ export default function HomePage() {
                   type="text"
                   placeholder="Job title, software (Dentrix), or skill..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setVisibleCount(25);
+                  }}
                   className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
@@ -92,11 +203,14 @@ export default function HomePage() {
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <select
                   value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedLocation(e.target.value);
+                    setVisibleCount(25);
+                  }}
                   className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white text-slate-800"
                 >
-                  <option value="All">All US Metros</option>
-                  {locations.filter((l) => l !== 'All').map((loc) => (
+                  <option value="All">All US Metros ({availableLocations.length - 1} cities)</option>
+                  {availableLocations.filter((l) => l !== 'All').map((loc) => (
                     <option key={loc} value={loc}>
                       {loc}
                     </option>
@@ -108,7 +222,10 @@ export default function HomePage() {
               <div className="sm:col-span-3">
                 <select
                   value={minPay}
-                  onChange={(e) => setMinPay(Number(e.target.value))}
+                  onChange={(e) => {
+                    setMinPay(Number(e.target.value));
+                    setVisibleCount(25);
+                  }}
                   className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white text-slate-800 font-medium"
                 >
                   <option value={0}>Any Hourly Pay</option>
@@ -128,7 +245,10 @@ export default function HomePage() {
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setVisibleCount(25);
+                  }}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
                     selectedCategory === cat
                       ? 'bg-teal-600 text-white shadow-sm shadow-teal-600/30'
@@ -144,10 +264,10 @@ export default function HomePage() {
           {/* Social Proof Stats */}
           <div className="pt-4 flex items-center justify-center gap-6 sm:gap-10 text-xs text-slate-500 font-medium flex-wrap">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 1,248 Active Positions
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {jobs.length.toLocaleString()} Active Positions Live
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 84 Verified Practices Added This Week
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 46 US Metros Covered
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Google for Jobs Indexed
@@ -163,11 +283,12 @@ export default function HomePage() {
           <div className="flex-1 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                  Verified Practice Openings
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Verified Practice Openings</span>
+                  {isRefreshing && <RefreshCw className="w-3.5 h-3.5 animate-spin text-teal-600" />}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Showing {filteredJobs.length} active positions with verified pay rates
+                  Showing {displayedJobs.length} of {filteredJobs.length} matching positions ({jobs.length.toLocaleString()} total in database)
                 </p>
               </div>
 
@@ -178,6 +299,7 @@ export default function HomePage() {
                     setSelectedLocation('All');
                     setSearchTerm('');
                     setMinPay(0);
+                    setVisibleCount(25);
                   }}
                   className="text-xs font-semibold text-teal-600 hover:text-teal-700 underline"
                 >
@@ -188,8 +310,8 @@ export default function HomePage() {
 
             {/* List of Job Cards */}
             <div className="space-y-4">
-              {filteredJobs.length > 0 ? (
-                filteredJobs.map((job) => <JobCard key={job.id} job={job} />)
+              {displayedJobs.length > 0 ? (
+                displayedJobs.map((job) => <JobCard key={job.id} job={job} />)
               ) : (
                 <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center bg-white space-y-3">
                   <p className="text-sm font-semibold text-slate-700">
@@ -201,6 +323,7 @@ export default function HomePage() {
                       setSelectedLocation('All');
                       setSearchTerm('');
                       setMinPay(0);
+                      setVisibleCount(25);
                     }}
                     className="px-4 py-2 text-xs font-semibold rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100"
                   >
@@ -210,6 +333,19 @@ export default function HomePage() {
               )}
             </div>
 
+            {/* Load More Button */}
+            {visibleCount < filteredJobs.length && (
+              <div className="pt-6 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-8 py-3.5 rounded-xl bg-white border border-slate-200 hover:border-teal-500 text-slate-800 hover:text-teal-700 font-bold text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 mx-auto"
+                >
+                  <span>Load More Openings ({filteredJobs.length - visibleCount} remaining)</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Inline Salary Calculator Banner */}
             <div className="mt-12">
               <SalaryCalculator />
@@ -218,65 +354,58 @@ export default function HomePage() {
 
           {/* Right Sidebar: Sticky Value Add & Employer CTA */}
           <div className="lg:w-80 space-y-6">
-            {/* Employer Card ($99 Post a Job) */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-teal-950 text-white p-6 shadow-xl border border-teal-800/40 relative overflow-hidden">
-              <div className="relative z-10 space-y-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400 bg-teal-900/60 px-2.5 py-1 rounded-md border border-teal-700/50">
-                  For Practice Owners
-                </span>
-                <h3 className="text-xl font-extrabold tracking-tight leading-snug">
-                  Hiring for your clinic? Fill your seat this week.
-                </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Avoid paying $3,000 staffing agency fees or getting 200 spam resumes on Indeed. Reach local, certified clinic professionals directly.
-                </p>
-
-                <div className="pt-2">
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-2xl font-black text-white">$99</span>
-                    <span className="text-xs text-teal-300 font-medium">Flat 30-Day Listing</span>
-                  </div>
-
-                  <Link
-                    href="/post-a-job"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm shadow-md transition-all"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Post Opening ($99)</span>
-                  </Link>
+            {/* Post a Job Box */}
+            <div className="bg-white rounded-2xl border border-teal-200/80 shadow-md p-6 space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-teal-500/10 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[11px] font-bold">
+                <PlusCircle className="w-3.5 h-3.5 text-teal-600" />
+                <span>For Private Practices</span>
+              </div>
+              <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
+                Hiring Dental or Clinic Staff?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Skip the $3,000 staffing recruiter fees. Reach local, licensed healthcare candidates with mandatory wage transparency.
+              </p>
+              <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span>30-Day Featured Job Post ($99 Flat)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Google for Jobs Structured Indexing</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Zero Spam Guarantee</span>
                 </div>
               </div>
-            </div>
-
-            {/* VIP WhatsApp & SMS Network Card */}
-            <div className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-wider">
-                <Bell className="w-4 h-4 animate-bounce" />
-                <span>Instant Job Drops</span>
-              </div>
-              <h4 className="font-bold text-slate-900 text-base leading-snug">
-                Join our VIP Candidate SMS & WhatsApp Network
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                High-paying clinic roles get filled in 48 hours. Get notified the minute a top-paying practice lists an opening.
-              </p>
-
               <Link
-                href="/alerts"
-                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors"
+                href="/post-a-job"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md shadow-teal-600/20 transition-all"
               >
-                <span>Subscribe to Alerts (Free)</span>
+                <span>+ Post a Practice Opening ($99)</span>
               </Link>
             </div>
 
-            {/* Practice Guarantee Box */}
-            <div className="rounded-2xl bg-teal-50/60 p-5 border border-teal-100 space-y-2 text-xs text-teal-900">
-              <span className="font-bold flex items-center gap-1.5 text-teal-800">
-                <ShieldCheck className="w-4 h-4 text-teal-600" /> Practice Standards
-              </span>
-              <p className="text-slate-600 leading-relaxed">
-                All practices must specify exact appointment lengths and mandatory hourly compensation ranges. Zero blind listings permitted.
+            {/* Candidate Alerts Box */}
+            <div className="bg-slate-900 text-white rounded-2xl p-6 space-y-4 shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                <Bell className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Get Instant SMS & WhatsApp Job Alerts
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Be the first to know when a high-paying private practice opens in your area.
               </p>
+              <Link
+                href="/alerts"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs transition-colors"
+              >
+                Join Candidate Alert Network
+              </Link>
             </div>
           </div>
         </div>

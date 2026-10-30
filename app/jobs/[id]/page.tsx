@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SEED_JOBS } from '@/data/jobs';
+import { ALL_JOBS, Job } from '@/data/jobs';
 import { generateJobPostingSchema } from '@/lib/schema';
 import {
   MapPin,
@@ -23,12 +23,13 @@ interface PageProps {
 }
 
 export function generateStaticParams() {
-  return SEED_JOBS.map((job) => ({ id: job.id }));
+  // Pre-generate static HTML pages for all available jobs for Google for Jobs indexing
+  return ALL_JOBS.map((job) => ({ id: job.id }));
 }
 
 export default async function JobDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const job = SEED_JOBS.find((j) => j.id === id);
+  const job = ALL_JOBS.find((j) => j.id === id);
 
   if (!job) {
     notFound();

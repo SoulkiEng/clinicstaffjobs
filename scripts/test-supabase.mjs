@@ -6,12 +6,12 @@ const supabaseKey = 'sb_publishable_n4vG_Jrw7F6GxFPa7Zj6HQ_2V8XUu1k';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function testConnection() {
-  console.log('Testing Supabase API connection to:', supabaseUrl);
-  const { data, error } = await supabase.from('jobs').select('*').limit(1);
+  const { data, count, error } = await supabase.from('jobs').select('id, title, clinic_name', { count: 'exact' });
   if (error) {
-    console.log('Supabase connected! Note:', error.message);
+    console.error('Error:', error.message);
   } else {
-    console.log('Success! Data returned:', data);
+    console.log('Total jobs count in Supabase:', count);
+    console.log('Sample jobs:', data);
   }
 }
 
