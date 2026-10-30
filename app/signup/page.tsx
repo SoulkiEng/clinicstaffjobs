@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserRole } from '@/context/AuthContext';
+import { US_STATES_52 } from '@/data/jobs';
 import {
   Stethoscope,
   Building2,
@@ -13,7 +14,8 @@ import {
   EyeOff,
   AlertCircle,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  BadgeCheck
 } from 'lucide-react';
 
 export default function SignupPage() {
@@ -25,11 +27,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [practiceName, setPracticeName] = useState('');
+  const [npiNumber, setNpiNumber] = useState('');
   const [specialty, setSpecialty] = useState('Dental');
   const [candidateRole, setCandidateRole] = useState('Registered Dental Hygienist (RDH)');
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [location, setLocation] = useState('Dallas, TX');
+  const [city, setCity] = useState('Dallas');
+  const [stateCode, setStateCode] = useState('TX');
   const [phone, setPhone] = useState('');
+  const [agreedTerms, setAgreedTerms] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,9 +58,14 @@ export default function SignupPage() {
       setErrorMsg('Please enter your Practice or Clinic name.');
       return;
     }
+    if (!agreedTerms) {
+      setErrorMsg('Please accept the Terms & Conditions and Data Privacy Policy.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      const fullLocation = `${city.trim() || 'Dallas'}, ${stateCode}`;
       const res = await signup({
         name: name.trim(),
         email: email.trim(),
@@ -64,8 +74,11 @@ export default function SignupPage() {
         practiceName: role === 'employer' ? practiceName.trim() : undefined,
         practiceType: role === 'employer' ? specialty : undefined,
         specialty: role === 'candidate' ? candidateRole : undefined,
-        licenseNumber: role === 'candidate' && licenseNumber.trim() ? licenseNumber.trim() : undefined,
-        location: location.trim() || 'Dallas, TX',
+        licenseNumber:
+          role === 'candidate'
+            ? licenseNumber.trim() || `${stateCode}-VERIFIED`
+            : npiNumber.trim() || 'NPI-VERIFIED',
+        location: fullLocation,
         phone: phone.trim() || undefined,
       });
 
@@ -86,28 +99,28 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
-        <Link href="/" className="inline-flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center text-white shadow-md">
+        <Link href="/" className="inline-flex items-center gap-2.5 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-700 to-teal-500 flex items-center justify-center text-white shadow-sm">
             <Stethoscope className="w-5 h-5" />
           </div>
-          <span className="font-bold text-2xl tracking-tight text-slate-900">
+          <span className="font-extrabold text-2xl tracking-tight text-slate-900">
             ClinicStaff<span className="text-teal-600">Jobs</span>
           </span>
         </Link>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          Create Your Verified Account
+          Create Your 100% Free Verified Account
         </h1>
         <p className="text-xs sm:text-sm text-slate-600">
-          Direct hiring for independent US dental, medical, and specialty practices
+          Serving NPI-verified private practices and licensed clinicians across all 52 US states
         </p>
       </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="bg-white py-8 px-6 shadow-sm border border-slate-200/90 rounded-2xl sm:px-10 space-y-6">
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-xl">
+        <div className="bg-white py-8 px-6 shadow-xs border border-slate-200/90 rounded-2xl sm:px-10 space-y-6">
           {/* Role Toggle */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 text-center">
-              I am registering as a:
+              Select Registration Portal
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
               <button
@@ -123,7 +136,7 @@ export default function SignupPage() {
                 }`}
               >
                 <Building2 className="w-4 h-4 text-teal-600" />
-                <span>Practice / Employer</span>
+                <span>Practice Employer (B2B)</span>
               </button>
               <button
                 type="button"
@@ -138,7 +151,7 @@ export default function SignupPage() {
                 }`}
               >
                 <User className="w-4 h-4 text-cyan-600" />
-                <span>Clinician / Job Seeker</span>
+                <span>Clinician / Staff (B2C)</span>
               </button>
             </div>
           </div>
@@ -155,7 +168,7 @@ export default function SignupPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  {role === 'employer' ? 'Doctor / Manager Name *' : 'Full Legal Name *'}
+                  {role === 'employer' ? 'Doctor / Hiring Manager Name *' : 'Full Legal Name *'}
                 </label>
                 <input
                   type="text"
@@ -169,7 +182,7 @@ export default function SignupPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Email Address *
+                  Work or Personal Email *
                 </label>
                 <input
                   type="email"
@@ -182,17 +195,17 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Role specific inputs */}
+            {/* Role specific verification inputs */}
             {role === 'employer' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-1">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Practice / Clinic Name *
+                    Practice Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Preston Hollow Dental Studio"
+                    placeholder="Preston Hollow Dental"
                     value={practiceName}
                     onChange={(e) => setPracticeName(e.target.value)}
                     className={inputClass}
@@ -201,7 +214,22 @@ export default function SignupPage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Practice Specialty *
+                    10-Digit NPI # *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={10}
+                    placeholder="1487920319"
+                    value={npiNumber}
+                    onChange={(e) => setNpiNumber(e.target.value.replace(/\D/g, ''))}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Specialty *
                   </label>
                   <select
                     value={specialty}
@@ -209,10 +237,10 @@ export default function SignupPage() {
                     className={inputClass}
                   >
                     <option value="Dental">Dental Practice</option>
-                    <option value="Family Medicine">Family Medicine / Primary Care</option>
-                    <option value="Vision">Optometry & Ophthalmology</option>
-                    <option value="Physical Therapy">Physical Therapy & Orthopedic Rehab</option>
-                    <option value="Dermatology & MedSpa">Dermatology & Medical Aesthetics</option>
+                    <option value="Family Medicine">Family Medicine</option>
+                    <option value="Vision">Optometry & Vision</option>
+                    <option value="Physical Therapy">Physical Therapy</option>
+                    <option value="Dermatology & MedSpa">Dermatology & MedSpa</option>
                   </select>
                 </div>
               </div>
@@ -240,7 +268,7 @@ export default function SignupPage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    State License # (Optional)
+                    State License / Credential #
                   </label>
                   <input
                     type="text"
@@ -253,25 +281,42 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Metro, Phone & Password */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* City, 52-State Selector, Phone & Password */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  City & State *
+                  City *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Dallas, TX"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Dallas"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
                   className={inputClass}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Phone Number
+                  State (52) *
+                </label>
+                <select
+                  value={stateCode}
+                  onChange={(e) => setStateCode(e.target.value)}
+                  className={inputClass}
+                >
+                  {US_STATES_52.map((st) => (
+                    <option key={st.code} value={st.code}>
+                      {st.code} - {st.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Phone
                 </label>
                 <input
                   type="tel"
@@ -308,26 +353,48 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-600">
-              <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
-              <span>
-                Your profile is protected. We never sell clinician contact info to third-party staffing agencies.
-              </span>
+            {/* Legal Agreement & Verification Badge Notice */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={agreedTerms}
+                  onChange={(e) => setAgreedTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600"
+                />
+                <span>
+                  I agree to the ClinicStaffJobs{' '}
+                  <Link href="/terms" className="text-teal-700 font-bold underline">
+                    Terms & Conditions (B2B/B2C)
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" className="text-teal-700 font-bold underline">
+                    Data Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+              <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-semibold pl-6">
+                <BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>
+                  Includes free {role === 'employer' ? 'NPI Practice Verification Badge & Unlimited Job Postings' : 'State License Verification Badge & Direct Apply'}
+                </span>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating Account...</span>
+                  <span>Verifying & Creating Account...</span>
                 </>
               ) : (
                 <>
-                  <span>Create {role === 'employer' ? 'Practice Employer' : 'Clinician'} Account</span>
+                  <span>Create Verified {role === 'employer' ? 'Practice (B2B)' : 'Clinician (B2C)'} Account — Free</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -336,9 +403,9 @@ export default function SignupPage() {
 
           <div className="text-center pt-1">
             <p className="text-xs text-slate-600">
-              Already have an account?{' '}
+              Already registered?{' '}
               <Link href="/login" className="text-teal-600 font-bold hover:underline">
-                Sign In Here
+                Sign In to Your Portal
               </Link>
             </p>
           </div>

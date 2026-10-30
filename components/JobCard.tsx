@@ -13,7 +13,8 @@ import {
   Bookmark,
   CheckCircle2,
   Building2,
-  TrendingUp
+  TrendingUp,
+  BadgeCheck
 } from 'lucide-react';
 
 interface JobCardProps {
@@ -72,23 +73,23 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
   const categoryStyles: Record<string, { badge: string; avatar: string }> = {
     'Dental': {
       badge: 'bg-teal-50 text-teal-800 border-teal-200',
-      avatar: 'bg-teal-600 text-white'
+      avatar: 'bg-teal-700 text-white'
     },
     'Vision': {
       badge: 'bg-sky-50 text-sky-800 border-sky-200',
-      avatar: 'bg-sky-600 text-white'
+      avatar: 'bg-sky-700 text-white'
     },
     'Physical Therapy': {
       badge: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-      avatar: 'bg-indigo-600 text-white'
+      avatar: 'bg-indigo-700 text-white'
     },
     'Dermatology & MedSpa': {
       badge: 'bg-rose-50 text-rose-800 border-rose-200',
-      avatar: 'bg-rose-600 text-white'
+      avatar: 'bg-rose-700 text-white'
     },
     'Family Medicine': {
       badge: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-      avatar: 'bg-emerald-600 text-white'
+      avatar: 'bg-emerald-700 text-white'
     }
   };
 
@@ -97,7 +98,6 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     avatar: 'bg-slate-700 text-white'
   };
 
-  // Generate clean 2-letter clinic initials
   const initials = job.clinicName
     .split(/\s+/)
     .filter((w) => /^[A-Za-z]/.test(w))
@@ -111,7 +111,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     <article
       className={`group relative rounded-xl transition-all duration-150 p-5 bg-white border ${
         isPinnedFeatured
-          ? 'border-teal-500/70 bg-gradient-to-r from-white via-white to-teal-50/20 shadow-sm ring-1 ring-teal-500/20'
+          ? 'border-teal-500/70 bg-gradient-to-r from-white via-white to-teal-50/20 shadow-xs ring-1 ring-teal-500/20'
           : 'border-slate-200/90 hover:border-slate-300 hover:shadow-md'
       }`}
     >
@@ -126,26 +126,31 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
           </div>
 
           <div className="space-y-2 flex-1 min-w-0">
-            {/* Top Meta Row: Specialty, Sponsored/Urgent, Relative Time */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Top Meta Row: Specialty, Verification Badges, Relative Time */}
+            <div className="flex flex-wrap items-center gap-1.5">
               {isPinnedFeatured && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90">
-                  <Sparkles className="w-3 h-3 text-amber-600" />
-                  <span>Sponsored Practice</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-teal-50 text-teal-900 border border-teal-300">
+                  <Sparkles className="w-3 h-3 text-teal-600" />
+                  <span>Priority Verified Opening</span>
                 </span>
               )}
 
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${style.badge}`}>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${style.badge}`}>
                 {job.clinicType}
               </span>
 
-              <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+              <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
                 {job.workType}
               </span>
 
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <BadgeCheck className="w-3 h-3 text-emerald-600" />
+                <span>NPI Verified #{job.npiNumber?.slice(0, 6)}•••</span>
+              </span>
+
               {job.isUrgent && !isPinnedFeatured && (
-                <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                  Actively Interviewing
+                <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Immediate Hire
                 </span>
               )}
 
@@ -170,16 +175,14 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                   {job.clinicName}
                 </span>
 
-                {job.verifiedActive && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    Direct Employer
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                  Direct Practice Employer
+                </span>
 
-                <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  {job.location}
+                  {job.location} ({job.zipCode})
                 </span>
               </div>
             </div>
@@ -196,7 +199,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               {job.softwareUsed.slice(0, 2).map((software, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/90"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/90"
                 >
                   <Laptop className="w-2.5 h-2.5 text-slate-400" />
                   {software}
@@ -249,7 +252,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               href={`/jobs/${job.id}`}
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-bold transition-all shadow-xs"
             >
-              <span>Quick Apply</span>
+              <span>Direct Apply</span>
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

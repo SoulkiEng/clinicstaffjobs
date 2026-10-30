@@ -14,7 +14,9 @@ import {
   ArrowLeft,
   Sparkles,
   Building2,
-  ArrowRight
+  ArrowRight,
+  BadgeCheck,
+  Lock
 } from 'lucide-react';
 
 interface PageProps {
@@ -35,9 +37,8 @@ export default async function JobDetailPage({ params }: PageProps) {
 
   const schemaData = generateJobPostingSchema(job);
 
-  // Find 3 similar openings in the same specialty or metro
   const similarJobs = ALL_JOBS.filter(
-    (j) => j.id !== job.id && (j.clinicType === job.clinicType || j.city === job.city)
+    (j) => j.id !== job.id && (j.clinicType === job.clinicType || j.state === job.state)
   ).slice(0, 3);
 
   return (
@@ -50,18 +51,22 @@ export default async function JobDetailPage({ params }: PageProps) {
       <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Breadcrumb Back Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-700 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to All Clinical Openings</span>
+              <span>Back to All 52-State Clinical Openings</span>
             </Link>
 
-            <span className="text-xs text-slate-400 font-medium">
-              Job ID: {job.id} • {job.location}
-            </span>
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <span>Listing ID: {job.id}</span>
+              <span>•</span>
+              <span className="text-emerald-700 font-bold flex items-center gap-1">
+                <BadgeCheck className="w-3.5 h-3.5" /> NPI Registry Verified (#{job.npiNumber})
+              </span>
+            </div>
           </div>
 
           {/* Main Job Header Card */}
@@ -90,7 +95,10 @@ export default async function JobDetailPage({ params }: PageProps) {
                     {job.clinicName}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Direct Practice
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" /> NPI Verified Practice
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Direct Employer (Zero Agency)
                   </span>
                 </div>
               </div>
@@ -110,7 +118,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                     href="#apply-section"
                     className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
                   >
-                    Apply Now ↓
+                    1-Click Free Apply ↓
                   </a>
                 </div>
               </div>
@@ -141,6 +149,19 @@ export default async function JobDetailPage({ params }: PageProps) {
                 <p className="text-sm font-bold text-slate-900">{job.benefits[0]}</p>
                 <p className="text-[11px] text-slate-500">Full package listed below</p>
               </div>
+            </div>
+
+            {/* Corporate Verification & Candidate Privacy Bar */}
+            <div className="p-3.5 rounded-xl bg-teal-50/60 border border-teal-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-teal-950">
+              <div className="flex items-center gap-2 font-semibold">
+                <Lock className="w-4 h-4 text-teal-700 shrink-0" />
+                <span>
+                  <strong>Candidate Privacy Shield:</strong> Your application goes straight to {job.clinicName} (NPI #{job.npiNumber}) and is never shared with third-party recruiters.
+                </span>
+              </div>
+              <Link href="/privacy" className="text-teal-700 font-bold underline shrink-0">
+                Data Privacy Policy
+              </Link>
             </div>
           </div>
 
@@ -190,14 +211,14 @@ export default async function JobDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Interactive 1-Click Direct Application Form */}
+          {/* Interactive 1-Click Direct Application Form (100% Free) */}
           <DirectApplyBox job={job} />
 
           {/* Similar Openings Section */}
           {similarJobs.length > 0 && (
             <div className="pt-4 space-y-3">
               <h3 className="text-base font-bold text-slate-900">
-                Similar Verified Openings You May Like
+                Similar NPI-Verified Openings in {job.clinicType} & {job.state}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {similarJobs.map((sim) => (

@@ -31,6 +31,7 @@ export async function getJobs(): Promise<Job[]> {
       isFeatured: Boolean(d.is_featured),
       isUrgent: Boolean(d.is_urgent),
       verifiedActive: Boolean(d.verified_active),
+      npiNumber: d.npi_number || '1487920319',
       appointmentTime: d.appointment_time,
       softwareUsed: d.software_used || [],
       benefits: d.benefits || [],

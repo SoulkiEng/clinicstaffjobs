@@ -343,9 +343,9 @@ export default function EmployerDashboardPage() {
                   {!job.isFeatured && (
                     <button
                       onClick={() => handleUpgradeFeatured(job.id)}
-                      className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 transition-colors"
                     >
-                      Promote Listing ($99)
+                      ✓ Activate Priority Badge (Free)
                     </button>
                   )}
 
