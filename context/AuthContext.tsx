@@ -10,10 +10,15 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   name: string;
+  gender?: 'Female' | 'Male' | 'Any';
   // Employer fields
   practiceName?: string;
   practiceType?: string;
+  npiNumber?: string;
   location?: string;
+  city?: string;
+  stateCode?: string;
+  zipCode?: string;
   phone?: string;
   website?: string;
   // Candidate fields
@@ -21,14 +26,26 @@ export interface UserProfile {
   licenseNumber?: string;
   desiredHourly?: number;
   yearsExperience?: string;
+  skills?: string | string[];
+  bio?: string;
   resumeFileName?: string;
+  resumeUpdatedAt?: string;
+  // Notification preferences
+  emailAlertsEnabled?: boolean;
+  applicationUpdatesEnabled?: boolean;
+  directMessagesEnabled?: boolean;
+  notifyEmailJobs?: boolean;
+  notifyApplicationUpdates?: boolean;
+  notifyEmployerMessages?: boolean;
 }
 
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   login: (email: string, role: UserRole, password?: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (profile: Partial<UserProfile> & { email: string; role: UserRole; name: string; password?: string }) => Promise<{ ok: boolean; error?: string }>;
+  signup: (
+    profile: Partial<UserProfile> & { email: string; role: UserRole; name: string; password?: string }
+  ) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
@@ -52,43 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, role: UserRole, _password?: string): Promise<{ ok: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    role: UserRole,
+    _password?: string
+  ): Promise<{ ok: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { ok: false, error: 'Please enter a valid email address.' };
     }
 
-    // 1. Check Supabase profiles table for existing account
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', cleanEmail)
-        .maybeSingle();
-
-      if (data) {
-        const dbProfile: UserProfile = {
-          id: data.id,
-          email: data.email,
-          role: (data.role as UserRole) || role,
-          name: data.name || (role === 'employer' ? 'Practice Hiring Manager' : 'Clinical Professional'),
-          practiceName: data.practice_name || undefined,
-          practiceType: data.practice_type || undefined,
-          location: data.location || 'Dallas, TX',
-          phone: data.phone || '(214) 555-0192',
-          specialty: data.specialty || undefined,
-          licenseNumber: data.license_number || undefined,
-          desiredHourly: data.desired_hourly ? Number(data.desired_hourly) : undefined,
-        };
-        setUser(dbProfile);
-        localStorage.setItem('clinicstaff_user', JSON.stringify(dbProfile));
-        return { ok: true };
-      }
-    } catch {
-      // Fallback to local profile if offline
-    }
-
-    // 2. Check locally registered accounts in localStorage
+    // 1. Check locally registered accounts first so custom fields (CV, bio, notifications) persist
     try {
       const accountsRaw = localStorage.getItem('clinicstaff_registered_accounts');
       const accounts: Record<string, UserProfile> = accountsRaw ? JSON.parse(accountsRaw) : {};
@@ -102,8 +93,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
 
-    // 3. Create a realistic session profile derived from their email if signing in directly
-    const emailPrefix = cleanEmail.split('@')[0]
+    // 2. Check Supabase profiles table
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (data) {
+        const locParts = (data.location || 'Dallas, TX').split(',').map((s: string) => s.trim());
+        const dbProfile: UserProfile = {
+          id: data.id,
+          email: data.email,
+          role: (data.role as UserRole) || role,
+          name: data.name || (role === 'employer' ? 'Clinic Hiring Manager' : 'Healthcare Professional'),
+          practiceName: data.practice_name || undefined,
+          practiceType: data.practice_type || 'Dental',
+          npiNumber: data.license_number || '1487920319',
+          location: data.location || 'Dallas, TX',
+          city: locParts[0] || 'Dallas',
+          stateCode: locParts[1] || 'TX',
+          phone: data.phone || '(214) 555-0192',
+          specialty: data.specialty || 'Registered Dental Hygienist (RDH)',
+          licenseNumber: data.license_number || undefined,
+          desiredHourly: data.desired_hourly ? Number(data.desired_hourly) : 45,
+          yearsExperience: '4',
+          emailAlertsEnabled: true,
+          applicationUpdatesEnabled: true,
+          directMessagesEnabled: true,
+        };
+        setUser(dbProfile);
+        localStorage.setItem('clinicstaff_user', JSON.stringify(dbProfile));
+        return { ok: true };
+      }
+    } catch {
+      // Fallback to local profile if offline
+    }
+
+    // 3. Create a clean session profile from email
+    const emailPrefix = cleanEmail
+      .split('@')[0]
       .replace(/[._-]+/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase());
 
@@ -111,21 +141,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: `usr-${Date.now()}`,
       email: cleanEmail,
       role,
-      name:
-        cleanEmail.includes('demo') || cleanEmail.includes('sarah')
-          ? role === 'employer'
-            ? 'Dr. Sarah Mitchell, DDS'
-            : 'Jessica Taylor, RDH'
-          : role === 'employer'
-          ? `${emailPrefix}`
-          : `${emailPrefix}`,
-      practiceName: role === 'employer' ? 'Preston Hollow Dental Studio' : undefined,
+      name: emailPrefix || (role === 'employer' ? 'Dr. Sarah Mitchell' : 'Jessica Taylor'),
+      gender: 'Female',
+      practiceName: role === 'employer' ? `${emailPrefix} Clinic` : undefined,
       practiceType: role === 'employer' ? 'Dental' : undefined,
+      npiNumber: role === 'employer' ? '1487920319' : undefined,
       location: 'Dallas, TX',
+      city: 'Dallas',
+      stateCode: 'TX',
+      zipCode: '75225',
       phone: '(214) 555-0192',
       specialty: role === 'candidate' ? 'Registered Dental Hygienist (RDH)' : undefined,
       desiredHourly: role === 'candidate' ? 48 : undefined,
-      licenseNumber: role === 'candidate' ? 'TX-DH-94821' : undefined
+      yearsExperience: '4',
+      licenseNumber: role === 'candidate' ? 'TX-RDH-94821' : undefined,
+      bio:
+        role === 'candidate'
+          ? 'Dedicated healthcare professional focused on patient comfort, accurate digital charting, and teamwork.'
+          : undefined,
+      skills:
+        role === 'candidate'
+          ? 'Patient Care, Digital Charting, Sterilization, Friendly Communication'
+          : undefined,
+      resumeFileName: role === 'candidate' ? `${emailPrefix.replace(/\s+/g, '_')}_CV.pdf` : undefined,
+      resumeUpdatedAt: 'Updated Today',
+      emailAlertsEnabled: true,
+      applicationUpdatesEnabled: true,
+      directMessagesEnabled: true,
     };
 
     setUser(defaultProfile);
@@ -141,14 +183,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: false, error: 'Please enter a valid email address.' };
     }
 
+    const locParts = (profile.location || 'Dallas, TX').split(',').map((s) => s.trim());
+
     const newProfile: UserProfile = {
       id: `usr-${Date.now()}`,
+      gender: profile.gender || 'Any',
+      city: profile.city || locParts[0] || 'Dallas',
+      stateCode: profile.stateCode || locParts[1] || 'TX',
+      zipCode: profile.zipCode || '75225',
+      yearsExperience: profile.yearsExperience || '3',
+      desiredHourly: profile.desiredHourly || 42,
+      resumeFileName:
+        profile.role === 'candidate'
+          ? `${profile.name.trim().replace(/\s+/g, '_')}_Resume.pdf`
+          : undefined,
+      resumeUpdatedAt: 'Uploaded Today',
+      emailAlertsEnabled: true,
+      applicationUpdatesEnabled: true,
+      directMessagesEnabled: true,
       ...profile,
       email: cleanEmail,
-      location: profile.location || 'Dallas, TX'
+      location: profile.location || `${profile.city || 'Dallas'}, ${profile.stateCode || 'TX'}`,
     };
 
-    // Save to Supabase profiles table
     try {
       await supabase.from('profiles').upsert(
         [
@@ -162,9 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             location: newProfile.location || 'Dallas, TX',
             phone: newProfile.phone || null,
             specialty: newProfile.specialty || null,
-            license_number: newProfile.licenseNumber || null,
+            license_number: newProfile.licenseNumber || newProfile.npiNumber || null,
             desired_hourly: newProfile.desiredHourly || null,
-          }
+          },
         ],
         { onConflict: 'id' }
       );
@@ -172,7 +229,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Supabase profile sync note:', e);
     }
 
-    // Save to local registered dictionary as well
     try {
       const accountsRaw = localStorage.getItem('clinicstaff_registered_accounts');
       const accounts: Record<string, UserProfile> = accountsRaw ? JSON.parse(accountsRaw) : {};
@@ -194,7 +250,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
-    const updated = { ...user, ...updates };
+    const updated: UserProfile = {
+      ...user,
+      ...updates,
+      location:
+        updates.city || updates.stateCode
+          ? `${updates.city || user.city || 'Dallas'}, ${updates.stateCode || user.stateCode || 'TX'}`
+          : updates.location || user.location,
+    };
     setUser(updated);
     localStorage.setItem('clinicstaff_user', JSON.stringify(updated));
 
@@ -204,26 +267,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accounts[updated.email] = updated;
       localStorage.setItem('clinicstaff_registered_accounts', JSON.stringify(accounts));
 
-      await supabase
-        .from('profiles')
-        .upsert(
-          [
-            {
-              id: updated.id,
-              email: updated.email,
-              role: updated.role,
-              name: updated.name,
-              practice_name: updated.practiceName || null,
-              practice_type: updated.practiceType || null,
-              location: updated.location || null,
-              phone: updated.phone || null,
-              specialty: updated.specialty || null,
-              license_number: updated.licenseNumber || null,
-              desired_hourly: updated.desiredHourly || null,
-            }
-          ],
-          { onConflict: 'id' }
-        );
+      await supabase.from('profiles').upsert(
+        [
+          {
+            id: updated.id,
+            email: updated.email,
+            role: updated.role,
+            name: updated.name,
+            practice_name: updated.practiceName || null,
+            practice_type: updated.practiceType || null,
+            location: updated.location || null,
+            phone: updated.phone || null,
+            specialty: updated.specialty || null,
+            license_number: updated.licenseNumber || updated.npiNumber || null,
+            desired_hourly: updated.desiredHourly || null,
+          },
+        ],
+        { onConflict: 'id' }
+      );
     } catch {
       // ignore offline error
     }

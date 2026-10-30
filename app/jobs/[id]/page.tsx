@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ALL_JOBS } from '@/data/jobs';
 import { generateJobPostingSchema } from '@/lib/schema';
 import DirectApplyBox from '@/components/DirectApplyBox';
+import GeminiJobInsightsCard from '@/components/GeminiJobInsightsCard';
 import {
   MapPin,
   Clock,
@@ -43,13 +44,13 @@ export default async function JobDetailPage({ params }: PageProps) {
       {
         '@type': 'ListItem',
         position: 1,
-        name: 'ClinicStaffJobs 52-State Feed',
+        name: 'ClinicStaffJobs',
         item: 'https://clinicstaffjobs.com/',
       },
       {
         '@type': 'ListItem',
         position: 2,
-        name: `${job.state} Clinical Jobs`,
+        name: `${job.state} Clinic Jobs`,
         item: `https://clinicstaffjobs.com/?state=${job.state}`,
       },
       {
@@ -91,14 +92,12 @@ export default async function JobDetailPage({ params }: PageProps) {
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-700 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to All 52-State Clinical Openings</span>
+              <span>Back to All Clinic Jobs</span>
             </Link>
 
             <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-              <span>Listing ID: {job.id}</span>
-              <span>•</span>
               <span className="text-emerald-700 font-bold flex items-center gap-1">
-                <BadgeCheck className="w-3.5 h-3.5" /> NPI Registry Verified (#{job.npiNumber})
+                <BadgeCheck className="w-3.5 h-3.5" /> Verified Private Clinic
               </span>
             </div>
           </div>
@@ -109,7 +108,7 @@ export default async function JobDetailPage({ params }: PageProps) {
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
-                    {job.clinicType} Practice
+                    {job.clinicType} Clinic
                   </span>
                   <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded">
                     {job.workType}
@@ -129,10 +128,10 @@ export default async function JobDetailPage({ params }: PageProps) {
                     {job.clinicName}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" /> NPI Verified Practice
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Clinic
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Direct Employer (Zero Agency)
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600" /> Direct Clinic Hiring
                   </span>
                 </div>
               </div>
@@ -152,62 +151,65 @@ export default async function JobDetailPage({ params }: PageProps) {
                     href="#apply-section"
                     className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
                   >
-                    1-Click Free Apply ↓
+                    1-Click Apply ↓
                   </a>
                 </div>
               </div>
             </div>
 
-            {/* Clinical Workflow Highlights */}
+            {/* Key Job Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 border-t border-slate-100">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-teal-600" /> Patient Scheduling Pace
+                  <Clock className="w-3.5 h-3.5 text-teal-600" /> Patient Schedule
                 </span>
                 <p className="text-sm font-bold text-slate-900">{job.appointmentTime || '1-on-1 Patient Care'}</p>
-                <p className="text-[11px] text-slate-500">Quality-focused private clinic flow</p>
+                <p className="text-[11px] text-slate-500">Unrushed clinic schedule</p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
-                  <Laptop className="w-3.5 h-3.5 text-slate-600" /> EHR & Clinical Tech
+                  <Laptop className="w-3.5 h-3.5 text-slate-600" /> Clinic Software
                 </span>
                 <p className="text-sm font-bold text-slate-900">{job.softwareUsed.join(', ')}</p>
-                <p className="text-[11px] text-slate-500">Modern digital charting & imaging</p>
+                <p className="text-[11px] text-slate-500">Digital charting & imaging</p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Highlighted Benefit
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Top Benefit
                 </span>
                 <p className="text-sm font-bold text-slate-900">{job.benefits[0]}</p>
-                <p className="text-[11px] text-slate-500">Full package listed below</p>
+                <p className="text-[11px] text-slate-500">Full benefits listed below</p>
               </div>
             </div>
 
-            {/* Corporate Verification & Candidate Privacy Bar */}
+            {/* Candidate Privacy Note */}
             <div className="p-3.5 rounded-xl bg-teal-50/60 border border-teal-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-teal-950">
               <div className="flex items-center gap-2 font-semibold">
                 <Lock className="w-4 h-4 text-teal-700 shrink-0" />
                 <span>
-                  <strong>Candidate Privacy Shield:</strong> Your application goes straight to {job.clinicName} (NPI #{job.npiNumber}) and is never shared with third-party recruiters.
+                  <strong>Direct Application:</strong> Your CV goes straight to {job.clinicName} and is never shared with outside agencies.
                 </span>
               </div>
               <Link href="/privacy" className="text-teal-700 font-bold underline shrink-0">
-                Data Privacy Policy
+                Privacy Policy
               </Link>
             </div>
           </div>
 
+          {/* Gemini AI Salary & Interview Coach Card */}
+          <GeminiJobInsightsCard job={job} />
+
           {/* Full Role Description, Responsibilities, Qualifications & Benefits */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-2">About the Practice & Role</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">About the Clinic & Job</h2>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{job.description}</p>
             </div>
 
             <div className="pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 mb-3">Clinical & Daily Responsibilities</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-3">Daily Responsibilities</h2>
               <ul className="space-y-2.5">
                 {job.responsibilities.map((resp, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-700">
@@ -219,7 +221,7 @@ export default async function JobDetailPage({ params }: PageProps) {
             </div>
 
             <div className="pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 mb-3">Licensure & Qualifications</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-3">Requirements & Qualifications</h2>
               <ul className="space-y-2.5">
                 {job.qualifications.map((qual, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-700">
@@ -231,7 +233,7 @@ export default async function JobDetailPage({ params }: PageProps) {
             </div>
 
             <div className="pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 mb-3">Compensation & Benefits Package</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-3">Pay & Benefits</h2>
               <div className="flex flex-wrap gap-2">
                 {job.benefits.map((benefit, idx) => (
                   <span
@@ -245,14 +247,14 @@ export default async function JobDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Interactive 1-Click Direct Application Form (100% Free) */}
+          {/* Interactive 1-Click Direct Application Form (Auto-Filled + Gemini AI Cover Note) */}
           <DirectApplyBox job={job} />
 
           {/* Similar Openings Section */}
           {similarJobs.length > 0 && (
             <div className="pt-4 space-y-3">
               <h3 className="text-base font-bold text-slate-900">
-                Similar NPI-Verified Openings in {job.clinicType} & {job.state}
+                Similar {job.clinicType} Jobs in {job.state}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {similarJobs.map((sim) => (

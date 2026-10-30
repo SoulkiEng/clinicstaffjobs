@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { ALL_JOBS, US_STATES_52, Job } from '@/data/jobs';
 import { supabase } from '@/lib/supabase';
-import JobCard from '@/components/JobCard';
+import JobCard, { getJobGenderPref, getJobExperienceLevel } from '@/components/JobCard';
 import SalaryCalculator from '@/components/SalaryCalculator';
 import {
   Search,
@@ -17,7 +17,6 @@ import {
   SlidersHorizontal,
   Bookmark,
   ArrowUpDown,
-  Building2,
   X,
   BadgeCheck,
   Laptop,
@@ -27,10 +26,12 @@ import {
   Scale,
   Share2,
   Check,
-  Clock
+  Clock,
+  Users,
+  Briefcase
 } from 'lucide-react';
 
-function mapDbJob(raw: any, idx = 0): Job {
+function mapDbJob(raw: any, idx = 0): Job & { genderPref?: string; experienceLevel?: string; status?: string } {
   return {
     id: raw.id,
     title: raw.title,
@@ -58,23 +59,26 @@ function mapDbJob(raw: any, idx = 0): Job {
     applyEmail: raw.apply_email,
     applyUrl: raw.apply_url || '',
     postedDate: raw.created_at || new Date().toISOString(),
+    genderPref: raw.gender_pref || undefined,
+    experienceLevel: raw.experience_level || undefined,
+    status: raw.status || 'Active',
   };
 }
 
 const ROLE_QUICK_FILTERS = [
-  { label: 'All Clinical Roles', query: '' },
+  { label: 'All Roles', query: '' },
   { label: 'Dental Hygienist (RDH)', query: 'Hygienist' },
-  { label: 'Dental Assistant (RDA/EFDA)', query: 'Dental Assistant' },
+  { label: 'Dental Assistant (RDA)', query: 'Dental Assistant' },
   { label: 'Medical Assistant (CMA)', query: 'Medical Assistant' },
   { label: 'Optician & Eye Tech', query: 'Opt' },
-  { label: 'Physical Therapy (PTA/Aide)', query: 'Physical Therap' },
+  { label: 'Physical Therapy (PTA)', query: 'Physical Therap' },
   { label: 'Dermatology & MedSpa', query: 'Dermatology' },
-  { label: 'Front Office & Manager', query: 'Coordinator' },
-  { label: 'Associate Dentist (DDS)', query: 'Dentist' },
+  { label: 'Front Desk / Receptionist', query: 'Coordinator' },
+  { label: 'Dentist (DDS / DMD)', query: 'Dentist' },
 ];
 
 const SOFTWARE_OPTIONS = [
-  { label: 'All Practice Software', value: 'All' },
+  { label: 'All Clinic Software', value: 'All' },
   { label: 'Dentrix / Ascend', value: 'Dentrix' },
   { label: 'Eaglesoft', value: 'Eaglesoft' },
   { label: 'Open Dental', value: 'Open Dental' },
@@ -87,11 +91,11 @@ const SOFTWARE_OPTIONS = [
 
 const BENEFIT_OPTIONS = [
   { label: 'All Benefits & Perks', value: 'All' },
-  { label: '100% Employer-Paid Medical', value: '100% Employer-Paid' },
-  { label: '401(k) Safe Harbor Match', value: '401(k)' },
-  { label: 'No Weekends / Weekday Only', value: 'No Weekends' },
-  { label: 'Annual CE Allowance ($1,500+)', value: 'CE' },
-  { label: 'Monthly Profit-Sharing Bonus', value: 'Bonus' },
+  { label: 'Full Health Insurance', value: '100% Employer-Paid' },
+  { label: '401(k) Retirement Match', value: '401(k)' },
+  { label: 'No Weekends (Mon–Fri)', value: 'No Weekends' },
+  { label: 'Paid CE & Training', value: 'CE' },
+  { label: 'Monthly Bonus Plan', value: 'Bonus' },
 ];
 
 export default function HomePage() {
@@ -101,6 +105,8 @@ export default function HomePage() {
   const [selectedState, setSelectedState] = useState<string>('All');
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
   const [selectedWorkType, setSelectedWorkType] = useState<string>('All');
+  const [selectedGenderPref, setSelectedGenderPref] = useState<'All' | 'Female' | 'Male'>('All');
+  const [selectedExperience, setSelectedExperience] = useState<'All' | 'Entry Level' | '1–3 Years' | '3+ Years'>('All');
   const [selectedSoftware, setSelectedSoftware] = useState<string>('All');
   const [selectedBenefit, setSelectedBenefit] = useState<string>('All');
   const [postedWithinDays, setPostedWithinDays] = useState<number>(0);
@@ -116,43 +122,43 @@ export default function HomePage() {
   const categories = ['All', 'Dental', 'Family Medicine', 'Vision', 'Physical Therapy', 'Dermatology & MedSpa'];
   const workTypes = ['All', 'Full-time', 'Part-time', 'PRN / Temp'];
 
-  const SPECIALTY_STORIES = [
+  const SPECIALTY_CARDS = [
     {
       id: 'All',
-      title: 'All 52 States',
-      subtitle: 'Live Feed',
-      emoji: '⚡',
+      title: 'All Clinic Jobs',
+      subtitle: 'All 52 US States',
+      emoji: '🏥',
       ring: 'from-teal-500 via-emerald-500 to-cyan-500',
       bg: 'bg-teal-50 text-teal-800',
     },
     {
       id: 'Dental',
       title: 'Dental Clinics',
-      subtitle: 'RDH • RDA • DDS',
+      subtitle: 'Hygienist • Assistant • DDS',
       emoji: '🦷',
       ring: 'from-teal-500 via-emerald-400 to-teal-600',
       bg: 'bg-teal-50 text-teal-800',
     },
     {
       id: 'Family Medicine',
-      title: 'Family Med',
-      subtitle: 'CMA • RN • NP',
+      title: 'Medical Clinics',
+      subtitle: 'Medical Assistant • RN • NP',
       emoji: '🩺',
       ring: 'from-emerald-500 via-green-500 to-teal-600',
       bg: 'bg-emerald-50 text-emerald-800',
     },
     {
       id: 'Vision',
-      title: 'Vision & Eye',
-      subtitle: 'Optician • COA',
+      title: 'Eye & Vision',
+      subtitle: 'Optician • Eye Tech',
       emoji: '👁️',
       ring: 'from-sky-500 via-blue-500 to-cyan-500',
       bg: 'bg-sky-50 text-sky-800',
     },
     {
       id: 'Physical Therapy',
-      title: 'Outpatient PT',
-      subtitle: 'PTA • DPT • Aide',
+      title: 'Physical Therapy',
+      subtitle: 'PTA • PT Aide • Therapist',
       emoji: '🏃',
       ring: 'from-indigo-500 via-violet-500 to-purple-600',
       bg: 'bg-indigo-50 text-indigo-800',
@@ -160,20 +166,20 @@ export default function HomePage() {
     {
       id: 'Dermatology & MedSpa',
       title: 'Derm & MedSpa',
-      subtitle: 'MA • Aesthetic RN',
+      subtitle: 'Derm MA • Aesthetic Nurse',
       emoji: '✨',
       ring: 'from-rose-500 via-pink-500 to-amber-500',
       bg: 'bg-rose-50 text-rose-800',
     },
   ];
 
-  const LIVE_ACTIVITY_ITEMS = [
-    '🟢 Preston Hollow Dental (Dallas, TX) verified NPI #148792••• & posted Lead RDH ($56/hr) • 2m ago',
-    '⚡ Jessica M., RDH applied via 1-Click Feed to Camelback Smiles (Phoenix, AZ) • 4m ago',
-    '🟢 Buckhead Dermatology & MedSpa (Atlanta, GA) posted Cosmetic MA ($31/hr) • 7m ago',
-    '🔥 19 clinicians viewing Brickell Vision & Optical (Miami, FL) • Live now',
-    '🟢 Pacific Coast Physical Therapy (San Diego, CA) verified NPI #192834••• & hired PTA • 11m ago',
-    '⚡ Marcus T., CMA saved Cherry Creek Family Practice (Denver, CO) • 14m ago',
+  const RECENT_HIRING_UPDATES = [
+    '🟢 Preston Hollow Dental (Dallas, TX) posted Dental Hygienist ($56/hr) • 2 mins ago',
+    '⚡ Jessica M. applied in 1 click to Camelback Smiles (Phoenix, AZ) • 4 mins ago',
+    '🟢 Buckhead Dermatology & MedSpa (Atlanta, GA) posted Medical Assistant ($31/hr) • 7 mins ago',
+    '🔥 19 job seekers viewing Brickell Vision & Optical (Miami, FL) • Just now',
+    '🟢 Pacific Coast Physical Therapy (San Diego, CA) hired Physical Therapist Assistant • 11 mins ago',
+    '⚡ Marcus T. saved Cherry Creek Family Practice (Denver, CO) • 14 mins ago',
   ];
 
   // Read URL params (?state=TX or ?specialty=Dental) on mount
@@ -262,7 +268,7 @@ export default function HomePage() {
     return counts;
   }, [jobs]);
 
-  // Dynamically extract available US Metros (filtered by selectedState if a state is chosen)
+  // Dynamically extract available US Metros
   const availableLocations = useMemo(() => {
     const locSet = new Set<string>();
     jobs.forEach((j) => {
@@ -282,9 +288,9 @@ export default function HomePage() {
     return counts;
   }, [jobs]);
 
-  // Fetch live jobs from Supabase & localStorage on client mount
+  // Fetch jobs from Supabase & localStorage (only showing Active jobs)
   useEffect(() => {
-    async function loadLiveFeed() {
+    async function loadJobsFeed() {
       try {
         setIsRefreshing(true);
 
@@ -295,7 +301,11 @@ export default function HomePage() {
           .limit(600);
 
         const localRaw = typeof window !== 'undefined' ? localStorage.getItem('my_posted_jobs') : null;
-        const localJobs = localRaw ? JSON.parse(localRaw).map((r: any, i: number) => mapDbJob(r, i)) : [];
+        const localJobs = localRaw
+          ? JSON.parse(localRaw)
+              .filter((r: any) => (r.status || 'Active') === 'Active')
+              .map((r: any, i: number) => mapDbJob(r, i))
+          : [];
 
         if ((data && data.length > 0) || localJobs.length > 0) {
           const liveMapped = data ? data.map((r: any, i: number) => mapDbJob(r, i)) : [];
@@ -318,10 +328,10 @@ export default function HomePage() {
       }
     }
 
-    loadLiveFeed();
+    loadJobsFeed();
   }, []);
 
-  // Multi-facet filter and sort with strict 2-slot priority cap
+  // Multi-facet filter and sort
   const { finalJobs, pinnedIds } = useMemo(() => {
     const nowMs = Date.now();
 
@@ -341,6 +351,14 @@ export default function HomePage() {
       const matchesWorkType = selectedWorkType === 'All' || job.workType === selectedWorkType;
       const matchesPay = minPay === 0 || job.maxHourly >= minPay;
       const matchesSaved = !onlySaved || savedIds.includes(job.id);
+
+      const jobGender = (job as any).genderPref || getJobGenderPref(job);
+      const matchesGender =
+        selectedGenderPref === 'All' || jobGender === selectedGenderPref;
+
+      const jobExp = (job as any).experienceLevel || getJobExperienceLevel(job);
+      const matchesExperience =
+        selectedExperience === 'All' || jobExp === selectedExperience;
 
       const matchesSoftware =
         selectedSoftware === 'All' ||
@@ -365,6 +383,8 @@ export default function HomePage() {
         matchesWorkType &&
         matchesPay &&
         matchesSaved &&
+        matchesGender &&
+        matchesExperience &&
         matchesSoftware &&
         matchesBenefit &&
         matchesDate
@@ -400,6 +420,8 @@ export default function HomePage() {
     selectedState,
     selectedLocation,
     selectedWorkType,
+    selectedGenderPref,
+    selectedExperience,
     selectedSoftware,
     selectedBenefit,
     postedWithinDays,
@@ -422,6 +444,8 @@ export default function HomePage() {
     setSelectedState('All');
     setSelectedLocation('All');
     setSelectedWorkType('All');
+    setSelectedGenderPref('All');
+    setSelectedExperience('All');
     setSelectedSoftware('All');
     setSelectedBenefit('All');
     setPostedWithinDays(0);
@@ -436,6 +460,8 @@ export default function HomePage() {
     selectedState !== 'All' ||
     selectedLocation !== 'All' ||
     selectedWorkType !== 'All' ||
+    selectedGenderPref !== 'All' ||
+    selectedExperience !== 'All' ||
     selectedSoftware !== 'All' ||
     selectedBenefit !== 'All' ||
     postedWithinDays > 0 ||
@@ -445,13 +471,13 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Live Social Career Network Activity Ticker (with Accessible Pause Control) */}
+      {/* Top Hiring Updates Bar */}
       <div className="bg-slate-950 text-white py-2 px-4 text-xs font-medium border-b border-slate-800 overflow-hidden relative">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0 z-10 bg-slate-950 pr-3 border-r border-slate-800">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <span className="font-extrabold text-emerald-400 tracking-wide uppercase text-[11px] whitespace-nowrap">
-              Live 52-State Pulse
+              Recent Activity
             </span>
           </div>
 
@@ -460,7 +486,7 @@ export default function HomePage() {
               className="live-ticker-track gap-8 items-center"
               style={tickerPaused ? { animationPlayState: 'paused' } : undefined}
             >
-              {[...LIVE_ACTIVITY_ITEMS, ...LIVE_ACTIVITY_ITEMS].map((item, idx) => (
+              {[...RECENT_HIRING_UPDATES, ...RECENT_HIRING_UPDATES].map((item, idx) => (
                 <span key={idx} className="text-slate-300 whitespace-nowrap text-xs font-medium">
                   {item}
                 </span>
@@ -473,7 +499,7 @@ export default function HomePage() {
               type="button"
               onClick={() => setTickerPaused(!tickerPaused)}
               className="text-[11px] font-bold text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-800 hover:border-slate-700 cursor-pointer whitespace-nowrap"
-              aria-label={tickerPaused ? 'Resume live activity ticker' : 'Pause live activity ticker'}
+              aria-label={tickerPaused ? 'Resume recent activity ticker' : 'Pause recent activity ticker'}
             >
               {tickerPaused ? '▶ Play' : '⏸ Pause'}
             </button>
@@ -487,30 +513,30 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Hero Search, Specialty Story Rings & 52-State Command Bar */}
+      {/* Hero Search & Specialty Category Bar */}
       <section className="relative bg-gradient-to-b from-white via-teal-50/20 to-white border-b border-slate-200/80 pt-7 pb-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div className="max-w-3xl space-y-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{jobs.length.toLocaleString()} Live Verified Roles • All 52 US States • 100% Free Network</span>
+                <span>{jobs.length.toLocaleString()} Open Jobs • All 52 US States • 100% Free to Use</span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
-                The Social Career Feed for{' '}
+                Find Dental & Healthcare{' '}
                 <span className="bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                  Private Healthcare & Dental Clinics
+                  Clinic Jobs Near You
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-600">
-                Preview clinic workflows, compare live hourly pay, and apply in 1 click directly to NPI-verified practice owners—zero staffing agencies or middlemen.
+                Search verified dental, medical, vision, physical therapy, and dermatology clinics across all 52 states. Compare hourly pay and apply directly in 1 click.
               </p>
             </div>
 
-            {/* Corporate Trust Pills */}
+            {/* Simple Trust Badges */}
             <div className="flex flex-wrap gap-2 text-xs font-bold shrink-0">
               <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
-                <BadgeCheck className="w-4 h-4 text-emerald-600" /> 10-Digit NPI Verified
+                <BadgeCheck className="w-4 h-4 text-emerald-600" /> Verified Private Clinics
               </span>
               <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-2xs">
                 <ShieldCheck className="w-4 h-4 text-teal-600" /> 1-Click Direct Apply
@@ -518,11 +544,11 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Interactive Social-Media "Specialty Story Rings" Bar */}
+          {/* Specialty Category Cards */}
           <div className="pt-1">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                Explore Specialty Channels (Tap to Filter Feed)
+                Choose a Clinic Specialty (Click to Filter)
               </span>
               {selectedCategory !== 'All' && (
                 <button
@@ -533,13 +559,13 @@ export default function HomePage() {
                   }}
                   className="text-xs font-bold text-teal-600 hover:text-teal-800 cursor-pointer"
                 >
-                  Show All Specialties ({jobs.length})
+                  Show All Specialties ({jobs.length.toLocaleString()} Open Jobs)
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-              {SPECIALTY_STORIES.map((story) => {
+              {SPECIALTY_CARDS.map((story) => {
                 const isSelected = selectedCategory === story.id;
                 const count = categoryCounts[story.id] || 0;
                 return (
@@ -556,7 +582,6 @@ export default function HomePage() {
                         : 'bg-white hover:bg-slate-50/90 text-slate-900 border-slate-200/90 shadow-2xs'
                     }`}
                   >
-                    {/* Story Gradient Ring Avatar */}
                     <div
                       className={`p-0.5 rounded-full bg-gradient-to-tr ${story.ring} shrink-0 transition-transform duration-200 group-hover:scale-105`}
                     >
@@ -570,15 +595,13 @@ export default function HomePage() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p
-                          className={`text-xs font-extrabold truncate ${
-                            isSelected ? 'text-white' : 'text-slate-900'
-                          }`}
-                        >
-                          {story.title}
-                        </p>
-                      </div>
+                      <p
+                        className={`text-xs font-extrabold truncate ${
+                          isSelected ? 'text-white' : 'text-slate-900'
+                        }`}
+                      >
+                        {story.title}
+                      </p>
                       <p
                         className={`text-[11px] truncate ${
                           isSelected ? 'text-slate-300' : 'text-slate-500'
@@ -591,7 +614,7 @@ export default function HomePage() {
                           isSelected ? 'bg-teal-500/20 text-teal-300' : story.bg
                         }`}
                       >
-                        {count.toLocaleString()} live
+                        {count.toLocaleString()} Open Jobs
                       </span>
                     </div>
                   </button>
@@ -600,16 +623,19 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Search Bar Box (4-Column Responsive Grid) */}
+          {/* Search Bar Box (Aligned 4-Column Responsive Grid) */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
               {/* Keyword Input (4 cols) */}
               <div className="sm:col-span-4 relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Title (RDH, CMA, RDA), software (Dentrix), or clinic..."
+                  placeholder="Job title (RDH, CMA, RDA), software, or clinic..."
                   value={searchTerm}
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
@@ -624,6 +650,7 @@ export default function HomePage() {
                       setCurrentPage(1);
                     }}
                     className="absolute right-2.5 top-3 text-slate-400 hover:text-slate-600"
+                    aria-label="Clear search query"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -634,6 +661,7 @@ export default function HomePage() {
               <div className="sm:col-span-3 relative">
                 <Globe className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <select
+                  aria-label="Select US State"
                   value={selectedState}
                   onChange={(e) => {
                     setSelectedState(e.target.value);
@@ -642,7 +670,7 @@ export default function HomePage() {
                   }}
                   className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium"
                 >
-                  <option value="All">All 52 US States & Territories</option>
+                  <option value="All">All 52 US States</option>
                   {US_STATES_52.map((st) => (
                     <option key={st.code} value={st.code}>
                       {st.name} ({st.code}) — {stateCounts[st.code] || 0} jobs
@@ -651,10 +679,11 @@ export default function HomePage() {
                 </select>
               </div>
 
-              {/* Metro / City Selector (3 cols) */}
+              {/* City Selector (3 cols) */}
               <div className="sm:col-span-3 relative">
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <select
+                  aria-label="Select City"
                   value={selectedLocation}
                   onChange={(e) => {
                     setSelectedLocation(e.target.value);
@@ -664,7 +693,7 @@ export default function HomePage() {
                 >
                   <option value="All">
                     {selectedState === 'All'
-                      ? `All Cities (${availableLocations.length - 1} Metros)`
+                      ? `All Cities (${availableLocations.length - 1} Cities)`
                       : `All ${selectedState} Cities`}
                   </option>
                   {availableLocations
@@ -680,6 +709,7 @@ export default function HomePage() {
               {/* Minimum Hourly Rate (2 cols) */}
               <div className="sm:col-span-2">
                 <select
+                  aria-label="Minimum Hourly Pay"
                   value={minPay}
                   onChange={(e) => {
                     setMinPay(Number(e.target.value));
@@ -687,7 +717,7 @@ export default function HomePage() {
                   }}
                   className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium"
                 >
-                  <option value={0}>Any Pay Rate</option>
+                  <option value={0}>Any Hourly Pay</option>
                   <option value={22}>$22+ / hr</option>
                   <option value={26}>$26+ / hr</option>
                   <option value={32}>$32+ / hr</option>
@@ -700,7 +730,7 @@ export default function HomePage() {
             {/* Popular Role Quick Chips */}
             <div className="mt-3 pt-3 border-t border-slate-200/70 flex items-center gap-1.5 overflow-x-auto pb-1">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">
-                Role Filter:
+                Quick Role Filter:
               </span>
               {ROLE_QUICK_FILTERS.map((rf) => {
                 const isActive = searchTerm.toLowerCase() === rf.query.toLowerCase();
@@ -712,7 +742,7 @@ export default function HomePage() {
                       setSearchTerm(rf.query);
                       setCurrentPage(1);
                     }}
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap transition-all ${
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                       isActive
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'bg-white text-slate-700 border border-slate-200 hover:border-teal-400 hover:text-teal-700'
@@ -730,19 +760,19 @@ export default function HomePage() {
       {/* Main Job Board Layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT SIDEBAR: Advanced Multi-Facet Filters (3 cols) */}
+          {/* LEFT SIDEBAR: Complete Search Filters (3 cols) */}
           <aside className="lg:col-span-3 space-y-5">
-            <div className="bg-white rounded-xl border border-slate-200/90 p-5 space-y-5 shadow-2xs">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-5 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                   <SlidersHorizontal className="w-4 h-4 text-teal-600" />
-                  <span>Advanced Filters</span>
+                  <span>Filter Jobs</span>
                 </h2>
                 {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={resetAllFilters}
-                    className="text-xs font-semibold text-teal-600 hover:text-teal-800 underline"
+                    className="text-xs font-semibold text-teal-600 hover:text-teal-800 underline cursor-pointer"
                   >
                     Reset All
                   </button>
@@ -757,7 +787,7 @@ export default function HomePage() {
                     setOnlySaved(!onlySaved);
                     setCurrentPage(1);
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     onlySaved
                       ? 'bg-teal-50 border-teal-500 text-teal-800'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -765,7 +795,7 @@ export default function HomePage() {
                 >
                   <span className="flex items-center gap-2">
                     <Bookmark className={`w-3.5 h-3.5 ${onlySaved ? 'fill-teal-600 text-teal-600' : 'text-slate-500'}`} />
-                    <span>Saved Openings</span>
+                    <span>My Saved Jobs</span>
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700 text-[11px]">
                     {savedIds.length}
@@ -773,10 +803,95 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* 1. Practice Specialty Filter */}
-              <div className="space-y-2">
+              {/* 1. Gender / Staff Preference Filter (Radio group per <6 mutually exclusive options rule) */}
+              <fieldset className="space-y-2 pt-3 border-t border-slate-100">
+                <legend className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+                  <Users className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Gender Preference</span>
+                </legend>
+                <div className="space-y-1.5">
+                  {[
+                    { value: 'All', label: 'Any Gender (Male & Female)' },
+                    { value: 'Female', label: 'Female Staff Preferred' },
+                    { value: 'Male', label: 'Male Staff Preferred' },
+                  ].map((opt) => {
+                    const checked = selectedGenderPref === opt.value;
+                    return (
+                      <label
+                        key={opt.value}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                          checked
+                            ? 'bg-teal-50 border-teal-500 text-teal-900 font-bold'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="genderPreference"
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedGenderPref(opt.value as 'All' | 'Female' | 'Male');
+                              setCurrentPage(1);
+                            }}
+                            className="accent-teal-600"
+                          />
+                          <span>{opt.label}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {/* 2. Experience Level Filter (Radio group per <6 mutually exclusive options rule) */}
+              <fieldset className="space-y-2 pt-3 border-t border-slate-100">
+                <legend className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Experience Level</span>
+                </legend>
+                <div className="space-y-1.5">
+                  {[
+                    { value: 'All', label: 'All Experience Levels' },
+                    { value: 'Entry Level', label: 'Entry Level / New Grad' },
+                    { value: '1–3 Years', label: '1–3 Years Experience' },
+                    { value: '3+ Years', label: '3+ Years (Senior / Lead)' },
+                  ].map((opt) => {
+                    const checked = selectedExperience === opt.value;
+                    return (
+                      <label
+                        key={opt.value}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                          checked
+                            ? 'bg-teal-50 border-teal-500 text-teal-900 font-bold'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="experienceLevel"
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedExperience(opt.value as any);
+                              setCurrentPage(1);
+                            }}
+                            className="accent-teal-600"
+                          />
+                          <span>{opt.label}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {/* 3. Clinic Specialty Filter */}
+              <div className="space-y-2 pt-3 border-t border-slate-100">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Practice Specialty (5 Core)
+                  Clinic Specialty
                 </label>
                 <div className="space-y-1">
                   {categories.map((cat) => {
@@ -789,7 +904,7 @@ export default function HomePage() {
                           setSelectedCategory(cat);
                           setCurrentPage(1);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                           active
                             ? 'bg-teal-600 text-white'
                             : 'text-slate-700 hover:bg-slate-100'
@@ -797,7 +912,7 @@ export default function HomePage() {
                       >
                         <span className="truncate">{cat === 'All' ? 'All 5 Specialties' : cat}</span>
                         <span
-                          className={`text-[11px] px-1.5 py-0.2 rounded ${
+                          className={`text-[11px] px-1.5 py-0.5 rounded ${
                             active ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
                           }`}
                         >
@@ -809,54 +924,10 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* 2. Clinical Software / EHR Stack Filter */}
-              <div className="space-y-2 pt-3 border-t border-slate-100">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Laptop className="w-3.5 h-3.5 text-slate-400" />
-                  <span>EHR & Practice Software</span>
-                </label>
-                <select
-                  value={selectedSoftware}
-                  onChange={(e) => {
-                    setSelectedSoftware(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
-                >
-                  {SOFTWARE_OPTIONS.map((sw) => (
-                    <option key={sw.value} value={sw.value}>
-                      {sw.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 3. Benefits & Perks Filter */}
-              <div className="space-y-2 pt-3 border-t border-slate-100">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Gift className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Benefits & Perks</span>
-                </label>
-                <select
-                  value={selectedBenefit}
-                  onChange={(e) => {
-                    setSelectedBenefit(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
-                >
-                  {BENEFIT_OPTIONS.map((bf) => (
-                    <option key={bf.value} value={bf.value}>
-                      {bf.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 4. Schedule / Employment Type */}
+              {/* 4. Schedule / Shift Type */}
               <div className="space-y-2 pt-3 border-t border-slate-100">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Schedule Type
+                  Work Schedule
                 </label>
                 <div className="space-y-1">
                   {workTypes.map((wt) => {
@@ -869,7 +940,7 @@ export default function HomePage() {
                           setSelectedWorkType(wt);
                           setCurrentPage(1);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                           active
                             ? 'bg-slate-900 text-white'
                             : 'text-slate-700 hover:bg-slate-100'
@@ -883,19 +954,75 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* 5. Date Posted Filter */}
+              {/* 5. Clinic Software Filter */}
               <div className="space-y-2 pt-3 border-t border-slate-100">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <label
+                  htmlFor="software-filter"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1"
+                >
+                  <Laptop className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Clinic Software</span>
+                </label>
+                <select
+                  id="software-filter"
+                  value={selectedSoftware}
+                  onChange={(e) => {
+                    setSelectedSoftware(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
+                >
+                  {SOFTWARE_OPTIONS.map((sw) => (
+                    <option key={sw.value} value={sw.value}>
+                      {sw.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 6. Benefits & Perks Filter */}
+              <div className="space-y-2 pt-3 border-t border-slate-100">
+                <label
+                  htmlFor="benefits-filter"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1"
+                >
+                  <Gift className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Benefits & Perks</span>
+                </label>
+                <select
+                  id="benefits-filter"
+                  value={selectedBenefit}
+                  onChange={(e) => {
+                    setSelectedBenefit(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
+                >
+                  {BENEFIT_OPTIONS.map((bf) => (
+                    <option key={bf.value} value={bf.value}>
+                      {bf.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 7. Date Posted Filter */}
+              <div className="space-y-2 pt-3 border-t border-slate-100">
+                <label
+                  htmlFor="date-posted-filter"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1"
+                >
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   <span>Date Posted</span>
                 </label>
                 <select
+                  id="date-posted-filter"
                   value={postedWithinDays}
                   onChange={(e) => {
                     setPostedWithinDays(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-600 focus:outline-none"
                 >
                   <option value={0}>Any Time</option>
                   <option value={1}>Past 24 Hours</option>
@@ -906,76 +1033,52 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* 100% Free Employer Hiring CTA Card */}
-            <div className="bg-white rounded-xl border border-teal-200 p-5 space-y-3 shadow-2xs">
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
+            {/* 100% Free Employer Hiring Card */}
+            <div className="bg-white rounded-2xl border border-teal-200 p-5 space-y-3 shadow-2xs">
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
                 <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>100% Free for Practices (B2B)</span>
+                <span>For Employers • 100% Free</span>
               </div>
               <h3 className="text-base font-extrabold text-slate-900 leading-snug">
-                Hiring RDH, RDA, CMA, or Clinic Staff?
+                Hiring Dental or Clinic Staff?
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Verify your practice with your 10-digit NPI number and post unlimited openings across all 52 states at zero cost.
+                Post unlimited jobs across all 52 states at $0 cost and manage all your active and closed jobs from your Employer Portal.
               </p>
               <Link
                 href="/post-a-job"
                 className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>Post a Practice Job (100% Free)</span>
+                <span>Post a Free Job</span>
               </Link>
             </div>
 
-            {/* Free Instant Email & Browser Push Alerts Box */}
-            <div className="bg-slate-900 text-white rounded-xl p-5 space-y-3">
+            {/* Free Job Alerts Card */}
+            <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2 text-teal-400 text-xs font-bold">
                 <Bell className="w-4 h-4" />
-                <span>Free Email & Browser Alerts (B2C)</span>
+                <span>Free Email Job Alerts</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Receive instant Email Digest or Browser Push alerts when an NPI-verified practice in your state posts a new opening.
+                Get free email notifications whenever a clinic in your city posts a new opening matching your role and pay.
               </p>
               <Link
                 href="/alerts"
-                className="w-full inline-flex items-center justify-center py-2 px-3 rounded-lg bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs transition-colors"
+                className="w-full inline-flex items-center justify-center py-2 px-3 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs transition-colors"
               >
-                Activate Free Email Alerts
+                Turn On Free Job Alerts
               </Link>
-            </div>
-
-            {/* Recently Verified Direct Placements Social Proof Box */}
-            <div className="bg-white rounded-xl border border-slate-200/90 p-5 space-y-3 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                  Recent Direct Placements
-                </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <div className="space-y-2.5 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <p className="font-bold text-slate-900">Lead RDH • $56/hr (4 Days/Wk)</p>
-                  <p className="text-slate-500 text-[11px]">Hired directly by Highland Park Dental (TX) in 48 hrs</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <p className="font-bold text-slate-900">Certified Medical Assistant • $28/hr</p>
-                  <p className="text-slate-500 text-[11px]">Hired directly by Scottsdale Family Med (AZ)</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <p className="font-bold text-slate-900">Outpatient PTA • $41/hr</p>
-                  <p className="text-slate-500 text-[11px]">Hired directly by Coral Gables Ortho PT (FL)</p>
-                </div>
-              </div>
             </div>
           </aside>
 
           {/* RIGHT/MAIN JOB LISTING FEED (9 cols) */}
           <main className="lg:col-span-9 space-y-4">
-            {/* Feed Toolbar: Count + Share Search Link + Sort Dropdown */}
-            <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Feed Toolbar */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                  {finalJobs.length.toLocaleString()} Verified {selectedCategory !== 'All' ? selectedCategory : 'Clinical'} Openings
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                  {finalJobs.length.toLocaleString()} {selectedCategory !== 'All' ? selectedCategory : 'Clinic'} Jobs Found
                   {selectedState !== 'All' ? ` in ${selectedState}` : ''}
                   {selectedLocation !== 'All' ? ` (${selectedLocation})` : ''}
                 </h2>
@@ -989,13 +1092,13 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleShareFilteredFeed}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
-                  title="Copy shareable link for this exact filtered feed"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                  title="Copy shareable link for this search"
                 >
                   {copiedSearchUrl ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700">Search Link Copied!</span>
+                      <span className="text-emerald-700">Link Copied!</span>
                     </>
                   ) : (
                     <>
@@ -1007,25 +1110,78 @@ export default function HomePage() {
 
                 <div className="flex items-center gap-1.5">
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="text-xs font-semibold text-slate-600 shrink-0">Sort:</span>
+                  <label htmlFor="sort-jobs-select" className="text-xs font-semibold text-slate-600 shrink-0">
+                    Sort by:
+                  </label>
                   <select
+                    id="sort-jobs-select"
                     value={sortBy}
                     onChange={(e) => {
                       setSortBy(e.target.value as any);
                       setCurrentPage(1);
                     }}
-                    className="text-xs font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-teal-600 focus:outline-none"
+                    className="text-xs font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 focus:border-teal-600 focus:outline-none"
                   >
-                    <option value="recommended">Priority Verified & Newest</option>
-                    <option value="newest">Newest Posted First</option>
-                    <option value="highest_pay">Highest Hourly Rate</option>
+                    <option value="recommended">Featured & Newest</option>
+                    <option value="newest">Newest First</option>
+                    <option value="highest_pay">Highest Hourly Pay</option>
                   </select>
                 </div>
               </div>
             </div>
 
+            {/* Active Filter Pills Bar (if any filter is active) */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 flex-wrap px-1">
+                <span className="text-xs font-bold text-slate-500">Active Filters:</span>
+                {selectedGenderPref !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGenderPref('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>{selectedGenderPref} Staff Preferred</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedExperience !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExperience('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer"
+                  >
+                    <span>{selectedExperience}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedCategory !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('All')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  >
+                    <span>{selectedCategory}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {selectedState !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedState('All');
+                      setSelectedLocation('All');
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  >
+                    <span>State: {selectedState}</span>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Job Cards Feed */}
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {displayedJobs.length > 0 ? (
                 displayedJobs.map((job) => (
                   <JobCard
@@ -1035,17 +1191,17 @@ export default function HomePage() {
                   />
                 ))
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center bg-white space-y-3">
+                <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center bg-white space-y-3">
                   <p className="text-base font-bold text-slate-800">
-                    No clinic openings match your exact filter combination.
+                    No clinic jobs match your current filters.
                   </p>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Try resetting your software/benefit filters or selecting All 52 US States.
+                    Try clearing one of your filters or searching across all 52 states.
                   </p>
                   <button
                     type="button"
                     onClick={resetAllFilters}
-                    className="px-4 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+                    className="px-4 py-2 text-xs font-bold rounded-xl bg-teal-600 text-white hover:bg-teal-700 transition-colors cursor-pointer"
                   >
                     Reset Filters & Show All {jobs.length.toLocaleString()} Jobs
                   </button>
@@ -1055,11 +1211,11 @@ export default function HomePage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-white rounded-2xl border border-slate-200/90 px-4 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs text-slate-600 font-medium">
                   Showing <strong className="text-slate-900">{(safePage - 1) * pageSize + 1}</strong> to{' '}
                   <strong className="text-slate-900">{Math.min(safePage * pageSize, finalJobs.length)}</strong> of{' '}
-                  <strong className="text-slate-900">{finalJobs.length.toLocaleString()}</strong> NPI-verified jobs
+                  <strong className="text-slate-900">{finalJobs.length.toLocaleString()}</strong> jobs
                 </p>
 
                 <div className="flex items-center gap-1.5">
@@ -1070,7 +1226,7 @@ export default function HomePage() {
                       setCurrentPage((p) => Math.max(1, p - 1));
                       window.scrollTo({ top: 280, behavior: 'smooth' });
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-colors cursor-pointer"
                   >
                     ← Prev
                   </button>
@@ -1088,7 +1244,7 @@ export default function HomePage() {
                           setCurrentPage(pageNum);
                           window.scrollTo({ top: 280, behavior: 'smooth' });
                         }}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                           safePage === pageNum
                             ? 'bg-teal-600 text-white shadow-xs'
                             : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -1106,7 +1262,7 @@ export default function HomePage() {
                       setCurrentPage((p) => Math.min(totalPages, p + 1));
                       window.scrollTo({ top: 280, behavior: 'smooth' });
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 text-xs font-bold transition-colors cursor-pointer"
                   >
                     Next →
                   </button>
@@ -1119,15 +1275,15 @@ export default function HomePage() {
               <SalaryCalculator />
             </div>
 
-            {/* 52-State Quick Browse SEO Grid */}
+            {/* 52-State Quick Browse Grid */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">
-                    Browse Verified Clinic Jobs Across All 52 US States & Territories
+                    Browse Clinic Jobs by State (All 52 US States)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Click any state below to filter Dental, Family Medicine, Vision, Physical Therapy, and Dermatology jobs in that jurisdiction.
+                    Click any state below to see open Dental, Medical, Vision, Physical Therapy, and Dermatology jobs.
                   </p>
                 </div>
                 {selectedState !== 'All' && (
@@ -1138,7 +1294,7 @@ export default function HomePage() {
                       setSelectedLocation('All');
                       setCurrentPage(1);
                     }}
-                    className="text-xs font-bold text-teal-600 underline"
+                    className="text-xs font-bold text-teal-600 underline cursor-pointer"
                   >
                     Clear State Filter ({selectedState})
                   </button>
@@ -1158,7 +1314,7 @@ export default function HomePage() {
                         setCurrentPage(1);
                         window.scrollTo({ top: 260, behavior: 'smooth' });
                       }}
-                      className={`px-2.5 py-1.5 rounded-lg border text-left text-xs font-semibold flex items-center justify-between transition-all ${
+                      className={`px-2.5 py-1.5 rounded-lg border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
                         active
                           ? 'bg-teal-600 border-teal-600 text-white'
                           : 'bg-slate-50 border-slate-200/80 text-slate-700 hover:border-teal-400 hover:bg-white'
@@ -1177,13 +1333,13 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Floating Side-by-Side Clinic Comparison Bar (Up to 3 Clinics) */}
+      {/* Floating Side-by-Side Clinic Comparison Bar */}
       {comparedJobs.length > 0 && (
         <div className="fixed bottom-4 inset-x-4 z-40 max-w-4xl mx-auto bg-slate-900/95 backdrop-blur-md text-white rounded-2xl border border-slate-700 p-3.5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-teal-400 uppercase tracking-wider">
               <Scale className="w-4 h-4" />
-              <span>Compare Clinics ({comparedJobs.length}/3):</span>
+              <span>Compare Jobs ({comparedJobs.length}/3):</span>
             </span>
             {comparedJobs.map((cj) => (
               <span
@@ -1232,15 +1388,20 @@ export default function HomePage() {
 
       {/* Side-by-Side Clinic Comparison Modal */}
       {showCompareModal && comparedJobs.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compare-modal-title"
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white rounded-3xl border border-slate-200 max-w-5xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
                 <span className="text-xs font-extrabold uppercase tracking-wider text-teal-700">
-                  Direct Practice Comparison Matrix
+                  Job Comparison
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                  Side-by-Side Clinic Workflow & Pay Comparison
+                <h3 id="compare-modal-title" className="text-xl sm:text-2xl font-black text-slate-900">
+                  Side-by-Side Clinic Pay & Benefits Comparison
                 </h3>
               </div>
               <button
@@ -1264,7 +1425,7 @@ export default function HomePage() {
                         {cj.clinicType}
                       </span>
                       <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                        <BadgeCheck className="w-3.5 h-3.5" /> NPI #{cj.npiNumber?.slice(0, 6)}•••
+                        <BadgeCheck className="w-3.5 h-3.5" /> Verified Clinic
                       </span>
                     </div>
 
@@ -1276,7 +1437,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="p-3 rounded-xl bg-white border border-slate-200">
-                      <div className="text-xs text-slate-500 font-semibold">Verified Hourly Rate</div>
+                      <div className="text-xs text-slate-500 font-semibold">Hourly Pay</div>
                       <div className="text-xl font-black text-slate-900">
                         ${cj.minHourly} – ${cj.maxHourly}
                         <span className="text-xs font-bold text-slate-500">/hr</span>
@@ -1288,7 +1449,7 @@ export default function HomePage() {
                       <div className="flex items-start gap-2">
                         <Clock className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-bold text-slate-900 block">Patient Slot Schedule:</span>
+                          <span className="font-bold text-slate-900 block">Patient Schedule:</span>
                           <span className="text-slate-600">{cj.appointmentTime || 'Standard Unrushed Schedule'}</span>
                         </div>
                       </div>
@@ -1296,13 +1457,13 @@ export default function HomePage() {
                       <div className="flex items-start gap-2">
                         <Laptop className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-bold text-slate-900 block">EHR / Practice Software:</span>
+                          <span className="font-bold text-slate-900 block">Clinic Software:</span>
                           <span className="text-slate-600">{cj.softwareUsed.join(', ')}</span>
                         </div>
                       </div>
 
                       <div className="space-y-1 pt-1">
-                        <span className="font-bold text-slate-900 block">Included Benefits:</span>
+                        <span className="font-bold text-slate-900 block">Benefits:</span>
                         {cj.benefits.map((b, i) => (
                           <div key={i} className="flex items-center gap-1.5 text-slate-600">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -1319,7 +1480,7 @@ export default function HomePage() {
                       onClick={() => setShowCompareModal(false)}
                       className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs text-center transition-colors"
                     >
-                      Apply Directly to {cj.clinicName} →
+                      View & Apply →
                     </Link>
                   </div>
                 </div>
