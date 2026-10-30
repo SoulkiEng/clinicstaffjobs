@@ -106,10 +106,71 @@ export default function HomePage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [tickerPaused, setTickerPaused] = useState(false);
 
   const pageSize = 20;
   const categories = ['All', 'Dental', 'Family Medicine', 'Vision', 'Physical Therapy', 'Dermatology & MedSpa'];
   const workTypes = ['All', 'Full-time', 'Part-time', 'PRN / Temp'];
+
+  const SPECIALTY_STORIES = [
+    {
+      id: 'All',
+      title: 'All 52 States',
+      subtitle: 'Live Feed',
+      emoji: '⚡',
+      ring: 'from-teal-500 via-emerald-500 to-cyan-500',
+      bg: 'bg-teal-50 text-teal-800',
+    },
+    {
+      id: 'Dental',
+      title: 'Dental Clinics',
+      subtitle: 'RDH • RDA • DDS',
+      emoji: '🦷',
+      ring: 'from-teal-500 via-emerald-400 to-teal-600',
+      bg: 'bg-teal-50 text-teal-800',
+    },
+    {
+      id: 'Family Medicine',
+      title: 'Family Med',
+      subtitle: 'CMA • RN • NP',
+      emoji: '🩺',
+      ring: 'from-emerald-500 via-green-500 to-teal-600',
+      bg: 'bg-emerald-50 text-emerald-800',
+    },
+    {
+      id: 'Vision',
+      title: 'Vision & Eye',
+      subtitle: 'Optician • COA',
+      emoji: '👁️',
+      ring: 'from-sky-500 via-blue-500 to-cyan-500',
+      bg: 'bg-sky-50 text-sky-800',
+    },
+    {
+      id: 'Physical Therapy',
+      title: 'Outpatient PT',
+      subtitle: 'PTA • DPT • Aide',
+      emoji: '🏃',
+      ring: 'from-indigo-500 via-violet-500 to-purple-600',
+      bg: 'bg-indigo-50 text-indigo-800',
+    },
+    {
+      id: 'Dermatology & MedSpa',
+      title: 'Derm & MedSpa',
+      subtitle: 'MA • Aesthetic RN',
+      emoji: '✨',
+      ring: 'from-rose-500 via-pink-500 to-amber-500',
+      bg: 'bg-rose-50 text-rose-800',
+    },
+  ];
+
+  const LIVE_ACTIVITY_ITEMS = [
+    '🟢 Preston Hollow Dental (Dallas, TX) verified NPI #148792••• & posted Lead RDH ($56/hr) • 2m ago',
+    '⚡ Jessica M., RDH applied via 1-Click Feed to Camelback Smiles (Phoenix, AZ) • 4m ago',
+    '🟢 Buckhead Dermatology & MedSpa (Atlanta, GA) posted Cosmetic MA ($31/hr) • 7m ago',
+    '🔥 19 clinicians viewing Brickell Vision & Optical (Miami, FL) • Live now',
+    '🟢 Pacific Coast Physical Therapy (San Diego, CA) verified NPI #192834••• & hired PTA • 11m ago',
+    '⚡ Marcus T., CMA saved Cherry Creek Family Practice (Denver, CO) • 14m ago',
+  ];
 
   // Read URL params (?state=TX or ?specialty=Dental) on mount
   useEffect(() => {
@@ -333,46 +394,158 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Top Corporate Verification Banner */}
-      <div className="bg-slate-900 text-white py-2 px-4 text-center text-xs font-medium border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
-            <BadgeCheck className="w-3.5 h-3.5" /> 100% Free Direct Career Network:
-          </span>
-          <span className="text-slate-200">
-            {jobs.length.toLocaleString()} NPI-verified openings across all 52 US States & Territories with mandatory hourly pay transparency.
-          </span>
-          <Link href="/post-a-job" className="underline text-teal-300 hover:text-white font-semibold ml-1">
-            Post a Practice Job (100% Free) →
-          </Link>
+      {/* Live Social Career Network Activity Ticker (with Accessible Pause Control) */}
+      <div className="bg-slate-950 text-white py-2 px-4 text-xs font-medium border-b border-slate-800 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 shrink-0 z-10 bg-slate-950 pr-3 border-r border-slate-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="font-extrabold text-emerald-400 tracking-wide uppercase text-[11px] whitespace-nowrap">
+              Live 52-State Pulse
+            </span>
+          </div>
+
+          <div className="overflow-hidden flex-1">
+            <div
+              className="live-ticker-track gap-8 items-center"
+              style={tickerPaused ? { animationPlayState: 'paused' } : undefined}
+            >
+              {[...LIVE_ACTIVITY_ITEMS, ...LIVE_ACTIVITY_ITEMS].map((item, idx) => (
+                <span key={idx} className="text-slate-300 whitespace-nowrap text-xs font-medium">
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 z-10 bg-slate-950 pl-3 border-l border-slate-800">
+            <button
+              type="button"
+              onClick={() => setTickerPaused(!tickerPaused)}
+              className="text-[11px] font-bold text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-800 hover:border-slate-700 cursor-pointer whitespace-nowrap"
+              aria-label={tickerPaused ? 'Resume live activity ticker' : 'Pause live activity ticker'}
+            >
+              {tickerPaused ? '▶ Play' : '⏸ Pause'}
+            </button>
+            <Link
+              href="/post-a-job"
+              className="hidden sm:inline-flex items-center gap-1 text-teal-300 hover:text-white font-bold whitespace-nowrap"
+            >
+              <span>+ Post Free Job</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Hero Search & 52-State Filter Section */}
-      <section className="bg-white border-b border-slate-200 pt-8 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      {/* Hero Search, Specialty Story Rings & 52-State Command Bar */}
+      <section className="relative bg-gradient-to-b from-white via-teal-50/20 to-white border-b border-slate-200/80 pt-7 pb-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-            <div className="max-w-3xl space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
-                <Building2 className="w-3.5 h-3.5 text-teal-600" />
-                <span>NPI-Verified US Healthcare & Dental Career Portal • All 52 States</span>
+            <div className="max-w-3xl space-y-2.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{jobs.length.toLocaleString()} Live Verified Roles • All 52 US States • 100% Free Network</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                Direct Private Practice & Outpatient Clinic Jobs
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
+                The Social Career Feed for{' '}
+                <span className="bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                  Private Healthcare & Dental Clinics
+                </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-600">
-                Exclusively serving Dental, Family Medicine, Vision, Physical Therapy, and Dermatology clinics. 100% free for both practices (B2B) and licensed staff (B2C).
+                Preview clinic workflows, compare live hourly pay, and apply in 1 click directly to NPI-verified practice owners—zero staffing agencies or middlemen.
               </p>
             </div>
 
             {/* Corporate Trust Pills */}
-            <div className="flex flex-wrap gap-2 text-xs font-bold">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <BadgeCheck className="w-4 h-4 text-emerald-600" /> NPI Registry Verified
+            <div className="flex flex-wrap gap-2 text-xs font-bold shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
+                <BadgeCheck className="w-4 h-4 text-emerald-600" /> 10-Digit NPI Verified
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200">
-                <ShieldCheck className="w-4 h-4 text-teal-600" /> Zero Staffing Agencies
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white text-slate-800 border border-slate-200 shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-teal-600" /> 1-Click Direct Apply
               </span>
+            </div>
+          </div>
+
+          {/* Interactive Social-Media "Specialty Story Rings" Bar */}
+          <div className="pt-1">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                Explore Specialty Channels (Tap to Filter Feed)
+              </span>
+              {selectedCategory !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-800 cursor-pointer"
+                >
+                  Show All Specialties ({jobs.length})
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              {SPECIALTY_STORIES.map((story) => {
+                const isSelected = selectedCategory === story.id;
+                const count = categoryCounts[story.id] || 0;
+                return (
+                  <button
+                    key={story.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(story.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`social-card-lift group text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-teal-500/40'
+                        : 'bg-white hover:bg-slate-50/90 text-slate-900 border-slate-200/90 shadow-2xs'
+                    }`}
+                  >
+                    {/* Story Gradient Ring Avatar */}
+                    <div
+                      className={`p-0.5 rounded-full bg-gradient-to-tr ${story.ring} shrink-0 transition-transform duration-200 group-hover:scale-105`}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                          isSelected ? 'bg-slate-900' : 'bg-white'
+                        }`}
+                      >
+                        {story.emoji}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p
+                          className={`text-xs font-extrabold truncate ${
+                            isSelected ? 'text-white' : 'text-slate-900'
+                          }`}
+                        >
+                          {story.title}
+                        </p>
+                      </div>
+                      <p
+                        className={`text-[11px] truncate ${
+                          isSelected ? 'text-slate-300' : 'text-slate-500'
+                        }`}
+                      >
+                        {story.subtitle}
+                      </p>
+                      <span
+                        className={`inline-block mt-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                          isSelected ? 'bg-teal-500/20 text-teal-300' : story.bg
+                        }`}
+                      >
+                        {count.toLocaleString()} live
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

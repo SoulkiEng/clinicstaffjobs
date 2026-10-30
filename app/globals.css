@@ -40,3 +40,83 @@ textarea:disabled {
   background-color: #f1f5f9;
   color: #64748b;
 }
+
+/* Modern CSS Entry/Exit & Compositor-Friendly Animations */
+.social-drawer-enter {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              translate 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              display 0.25s;
+  transition-behavior: allow-discrete;
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 0.15s ease-out;
+    @starting-style {
+      translate: none;
+    }
+  }
+}
+
+.social-card-lift {
+  transition: translate 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+
+  &:hover {
+    translate: 0 -2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      translate: none;
+    }
+  }
+}
+
+@keyframes ticker-slide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.live-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-slide 38s linear infinite;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes heart-pop {
+  0% {
+    scale: 1;
+  }
+  45% {
+    scale: 1.28;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.animate-pop {
+  animation: heart-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
