@@ -84,7 +84,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs">
               <li><Link href="/career-resources" className="hover:text-teal-400 transition-colors">52-State Licensing & CE Directory</Link></li>
               <li><Link href="/salary-calculator" className="hover:text-teal-400 transition-colors">2026 Hourly Wage Benchmark Tool</Link></li>
-              <li><Link href="/alerts" className="hover:text-teal-400 transition-colors">Free Instant SMS & Email Job Alerts</Link></li>
+              <li><Link href="/alerts" className="hover:text-teal-400 transition-colors">Free Instant Email & Browser Job Alerts</Link></li>
               <li><Link href="/dashboard/candidate" className="hover:text-teal-400 transition-colors">Clinician Profile & Saved Jobs</Link></li>
               <li><Link href="/career-resources#negotiation" className="hover:text-teal-400 transition-colors">Private Practice Pay Negotiation Guide</Link></li>
             </ul>

@@ -36,6 +36,36 @@ export default async function JobDetailPage({ params }: PageProps) {
   }
 
   const schemaData = generateJobPostingSchema(job);
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'ClinicStaffJobs 52-State Feed',
+        item: 'https://clinicstaffjobs.com/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: `${job.state} Clinical Jobs`,
+        item: `https://clinicstaffjobs.com/?state=${job.state}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: `${job.clinicType} Jobs`,
+        item: `https://clinicstaffjobs.com/?specialty=${encodeURIComponent(job.clinicType)}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: `${job.title} at ${job.clinicName}`,
+        item: `https://clinicstaffjobs.com/jobs/${job.id}`,
+      },
+    ],
+  };
 
   const similarJobs = ALL_JOBS.filter(
     (j) => j.id !== job.id && (j.clinicType === job.clinicType || j.state === job.state)
@@ -46,6 +76,10 @@ export default async function JobDetailPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">

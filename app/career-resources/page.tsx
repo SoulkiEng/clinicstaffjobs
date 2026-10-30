@@ -145,6 +145,54 @@ export default function CareerResourcesB2CPage() {
           </div>
         </div>
 
+        {/* Multi-State Clinical License Compact & Reciprocity Guide */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5 shadow-xs">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700">
+              <ShieldCheck className="w-4 h-4 text-teal-600" />
+              <span>2026 Multi-State Licensure Portability</span>
+            </div>
+            <h2 className="text-xl font-extrabold text-slate-900">
+              Interstate Clinical License Reciprocity & Compact Guide
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Relocating to a new state? Here is how interstate licensure compacts work across our 5 core outpatient specialties:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <span className="font-extrabold text-teal-800 uppercase tracking-wider text-[11px]">
+                🦷 Dental & Hygiene (DDH Compact)
+              </span>
+              <p className="font-bold text-slate-900">Dentist & Dental Hygienist Compact + Licensure by Credentials</p>
+              <p className="text-slate-600 leading-relaxed">
+                Active RDHs and DDS clinicians with 1,000+ clinical hours and National Board passing scores qualify for expedited Licensure by Credentials or Compact privilege in 40+ states without retaking clinical manikin exams.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <span className="font-extrabold text-indigo-800 uppercase tracking-wider text-[11px]">
+                🏃 Physical Therapy (PT Compact)
+              </span>
+              <p className="font-bold text-slate-900">PT & PTA Interstate Compact Privilege</p>
+              <p className="text-slate-600 leading-relaxed">
+                Licensed Physical Therapists (DPT) and Physical Therapist Assistants (PTA) holding a home-state license in a PT Compact member state can obtain instant compact practice privileges in 35+ participating states online.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <span className="font-extrabold text-emerald-800 uppercase tracking-wider text-[11px]">
+                🩺 CMA / RMA, RN (NLC) & Opticians
+              </span>
+              <p className="font-bold text-slate-900">National AAMA / AMT & Nurse Licensure Compact (41+ States)</p>
+              <p className="text-slate-600 leading-relaxed">
+                AAMA (CMA), AMT (RMA), JCAHPO (COA), and ABO/NCLE credentials are nationally portable across all 52 US jurisdictions, while Outpatient RNs enjoy multi-state privilege across 41+ NLC states.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* 52-State Clinical Licensing & Job Directory */}
         <div id="negotiation" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-5 shadow-xs">
           <div className="space-y-1">

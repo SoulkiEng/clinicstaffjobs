@@ -147,6 +147,69 @@ export default function EmployersB2BPage() {
             </table>
           </div>
         </div>
+
+        {/* Free B2B Practice Growth Tools: Embeddable Hiring Badge & Offer Letter Templates */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Embeddable Practice Website Badge (SEO Backlink Engine) */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+              <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Official Practice Website Trust Badge</span>
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-900">
+              Add Our "NPI-Verified Hiring Practice" Badge to Your Clinic Website
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Show patients and local clinicians that your practice is an NPI-verified direct employer. Copy the HTML snippet below and paste it into your practice website’s Careers or Footer section:
+            </p>
+            <div className="p-4 rounded-xl bg-slate-900 text-teal-300 font-mono text-[11px] overflow-x-auto border border-slate-800">
+              {`<a href="https://clinicstaffjobs.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;background:#0f172a;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:700;text-decoration:none;border:1px solid #14b8a6;">✓ NPI-Verified Direct Employer on ClinicStaffJobs.com</a>`}
+            </div>
+            <p className="text-[11px] text-slate-500">
+              ✓ Automatically links candidates to our 100% free 52-state clinical career network.
+            </p>
+          </div>
+
+          {/* Free Clinical Offer Letter & Job Description Checklists */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200 text-xs font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+              <span>Free 2026 Practice HR Templates</span>
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-900">
+              High-Converting Clinical Job Description Blueprint
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Practices that include these 4 clinical workflow details receive <strong>3.4x more licensed applicants</strong> within the first 48 hours:
+            </p>
+            <ul className="space-y-2 text-xs text-slate-700">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span><strong>Exact Patient Slot Length:</strong> Specify "60-Min Adult Prophy / 45-Min 1-on-1 PT" in the first sentence.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span><strong>Digital Software & Equipment Stack:</strong> List Dentrix, Open Dental, iTero, AthenaHealth, or ModMed EMA.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span><strong>Transparent Hourly Base Range:</strong> Always state exact hourly pay (e.g., $48–$58/hr) rather than "Competitive DOE".</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span><strong>Weekday Work-Life Balance:</strong> Highlight "No Weekends" or "4-Day Workweek (Mon–Thu)" prominently.</span>
+              </li>
+            </ul>
+            <div className="pt-2">
+              <Link
+                href="/post-a-job"
+                className="inline-flex items-center gap-1.5 text-xs font-extrabold text-teal-700 hover:text-teal-900"
+              >
+                <span>Use Our 1-Click AI Clinical Job Polisher (100% Free) →</span>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

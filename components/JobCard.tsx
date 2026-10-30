@@ -11,7 +11,6 @@ import {
   Sparkles,
   ArrowRight,
   Laptop,
-  Bookmark,
   CheckCircle2,
   Building2,
   TrendingUp,
@@ -23,7 +22,9 @@ import {
   Flame,
   Send,
   Eye,
-  Check
+  Check,
+  Scale,
+  Mail
 } from 'lucide-react';
 
 interface JobCardProps {
@@ -49,6 +50,7 @@ export function formatRelativeTime(isoDate: string): string {
 
 export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps) {
   const [isSaved, setIsSaved] = useState(false);
+  const [isCompared, setIsCompared] = useState(false);
   const [justLiked, setJustLiked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -68,12 +70,23 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
   const baseSaves = (hashNum % 34) + 11;
 
   useEffect(() => {
-    try {
-      const savedIds: string[] = JSON.parse(localStorage.getItem('saved_clinic_jobs') || '[]');
-      setIsSaved(savedIds.includes(job.id));
-    } catch {
-      // ignore storage error
-    }
+    const syncState = () => {
+      try {
+        const savedIds: string[] = JSON.parse(localStorage.getItem('saved_clinic_jobs') || '[]');
+        setIsSaved(savedIds.includes(job.id));
+        const compareIds: string[] = JSON.parse(localStorage.getItem('compare_clinic_jobs') || '[]');
+        setIsCompared(compareIds.includes(job.id));
+      } catch {
+        // ignore storage error
+      }
+    };
+    syncState();
+    window.addEventListener('savedJobsUpdated', syncState);
+    window.addEventListener('compareJobsUpdated', syncState);
+    return () => {
+      window.removeEventListener('savedJobsUpdated', syncState);
+      window.removeEventListener('compareJobsUpdated', syncState);
+    };
   }, [job.id]);
 
   const toggleSave = (e: React.MouseEvent) => {
@@ -98,10 +111,33 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
     }
   };
 
+  const toggleCompare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const compareIds: string[] = JSON.parse(localStorage.getItem('compare_clinic_jobs') || '[]');
+      let updated: string[];
+      if (compareIds.includes(job.id)) {
+        updated = compareIds.filter((id) => id !== job.id);
+        setIsCompared(false);
+      } else {
+        updated = [...compareIds.slice(-2), job.id]; // Max 3 clinics side-by-side
+        setIsCompared(true);
+      }
+      localStorage.setItem('compare_clinic_jobs', JSON.stringify(updated));
+      window.dispatchEvent(new Event('compareJobsUpdated'));
+    } catch {
+      // ignore
+    }
+  };
+
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/jobs/${job.id}` : `https://clinicstaffjobs.com/jobs/${job.id}`;
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/jobs/${job.id}`
+        : `https://clinicstaffjobs.com/jobs/${job.id}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).catch(() => {});
     }
@@ -374,20 +410,33 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
               {/* Instant 1-Click Apply Box Inside Feed Card */}
               <div className="bg-white rounded-xl p-3.5 border border-teal-200 shadow-2xs">
                 {appliedSuccess ? (
-                  <div className="flex items-center gap-2 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs font-bold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>
-                      Application sent directly to {job.clinicName}! The practice manager will contact you directly.
-                    </span>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>
+                        Application logged & routed to {job.clinicName}!
+                      </span>
+                    </div>
+                    <a
+                      href={`mailto:${job.applyEmail}?subject=${encodeURIComponent(
+                        `Direct Clinician Application: ${job.title} — ${applicantName}`
+                      )}&body=${encodeURIComponent(
+                        `Hello ${job.clinicName} Hiring Team,\n\nI just applied for your ${job.title} opening (${job.location}) on ClinicStaffJobs.com.\n\n• Name: ${applicantName}\n• Email: ${applicantEmail}\n• Phone: ${applicantPhone || 'Provided upon request'}\n• Clinical License: ${applicantLicense || 'Active & Verified'}\n\nI look forward to scheduling a brief interview.\n\nBest regards,\n${applicantName}`
+                      )}`}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-900 hover:bg-teal-700 text-white text-xs font-bold transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Send Instant Copy Directly to Practice Owner’s Inbox →</span>
+                    </a>
                   </div>
                 ) : (
                   <form onSubmit={handleQuickApplySubmit} className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                         <Send className="w-3.5 h-3.5 text-teal-600" />
-                        Instant Direct-to-Practice Apply (Zero Fees)
+                        Instant Direct-to-Practice Email Apply
                       </span>
-                      <span className="text-[11px] font-semibold text-emerald-700">100% Confidential</span>
+                      <span className="text-[11px] font-semibold text-emerald-700">100% Free</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
@@ -408,7 +457,7 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
                       />
                       <input
                         type="tel"
-                        placeholder="Mobile Phone (for Interview Text)"
+                        placeholder="Phone (Optional for Interview)"
                         value={applicantPhone}
                         onChange={(e) => setApplicantPhone(e.target.value)}
                         className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900"
@@ -456,6 +505,21 @@ export default function JobCard({ job, isPinnedFeatured = false }: JobCardProps)
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* Compare Up to 3 Clinics Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleCompare}
+            title="Compare Hourly Pay, Patient Slots & Software Side-by-Side"
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+              isCompared
+                ? 'bg-teal-50 border-teal-400 text-teal-800 shadow-2xs'
+                : 'bg-slate-50/80 border-slate-200/80 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <Scale className="w-3.5 h-3.5 text-teal-600" />
+            <span>{isCompared ? 'Comparing ✓' : '+ Compare'}</span>
+          </button>
+
           {/* Like / Save Social Button */}
           <button
             type="button"

@@ -23,7 +23,11 @@ import {
   Laptop,
   Calendar,
   Gift,
-  Globe
+  Globe,
+  Scale,
+  Share2,
+  Check,
+  Clock
 } from 'lucide-react';
 
 function mapDbJob(raw: any, idx = 0): Job {
@@ -178,16 +182,28 @@ export default function HomePage() {
       const params = new URLSearchParams(window.location.search);
       const st = params.get('state');
       const spec = params.get('specialty') || params.get('category');
+      const mp = params.get('minPay');
+      const q = params.get('q');
       if (st && US_STATES_52.some((s) => s.code === st.toUpperCase())) {
         setSelectedState(st.toUpperCase());
       }
       if (spec && categories.includes(spec)) {
         setSelectedCategory(spec);
       }
+      if (mp && !isNaN(Number(mp))) {
+        setMinPay(Number(mp));
+      }
+      if (q) {
+        setSearchTerm(q);
+      }
     }
   }, []);
 
-  // Sync saved jobs from localStorage
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [copiedSearchUrl, setCopiedSearchUrl] = useState(false);
+
+  // Sync saved & compared jobs from localStorage
   useEffect(() => {
     const syncSaved = () => {
       try {
@@ -197,10 +213,45 @@ export default function HomePage() {
         setSavedIds([]);
       }
     };
+    const syncCompare = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('compare_clinic_jobs') || '[]');
+        setCompareIds(Array.isArray(stored) ? stored : []);
+      } catch {
+        setCompareIds([]);
+      }
+    };
     syncSaved();
+    syncCompare();
     window.addEventListener('savedJobsUpdated', syncSaved);
-    return () => window.removeEventListener('savedJobsUpdated', syncSaved);
+    window.addEventListener('compareJobsUpdated', syncCompare);
+    return () => {
+      window.removeEventListener('savedJobsUpdated', syncSaved);
+      window.removeEventListener('compareJobsUpdated', syncCompare);
+    };
   }, []);
+
+  const comparedJobs = useMemo(
+    () => jobs.filter((j) => compareIds.includes(j.id)),
+    [jobs, compareIds]
+  );
+
+  const handleShareFilteredFeed = () => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+    if (selectedState !== 'All') params.set('state', selectedState);
+    if (selectedCategory !== 'All') params.set('specialty', selectedCategory);
+    if (minPay > 0) params.set('minPay', String(minPay));
+    if (searchTerm.trim()) params.set('q', searchTerm.trim());
+    const qs = params.toString();
+    const shareUrl = `${window.location.origin}/${qs ? `?${qs}` : ''}`;
+    window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl).catch(() => {});
+    }
+    setCopiedSearchUrl(true);
+    setTimeout(() => setCopiedSearchUrl(false), 2200);
+  };
 
   // State counts across all 52 states
   const stateCounts = useMemo(() => {
@@ -876,27 +927,51 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Free Instant Job Alerts Box */}
+            {/* Free Instant Email & Browser Push Alerts Box */}
             <div className="bg-slate-900 text-white rounded-xl p-5 space-y-3">
               <div className="flex items-center gap-2 text-teal-400 text-xs font-bold">
                 <Bell className="w-4 h-4" />
-                <span>Free Instant Job Alerts (B2C)</span>
+                <span>Free Email & Browser Alerts (B2C)</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Receive instant Email, SMS, or WhatsApp alerts when an NPI-verified practice in your state posts a new opening.
+                Receive instant Email Digest or Browser Push alerts when an NPI-verified practice in your state posts a new opening.
               </p>
               <Link
                 href="/alerts"
                 className="w-full inline-flex items-center justify-center py-2 px-3 rounded-lg bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs transition-colors"
               >
-                Activate Free Alerts
+                Activate Free Email Alerts
               </Link>
+            </div>
+
+            {/* Recently Verified Direct Placements Social Proof Box */}
+            <div className="bg-white rounded-xl border border-slate-200/90 p-5 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                  Recent Direct Placements
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="space-y-2.5 text-xs">
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="font-bold text-slate-900">Lead RDH • $56/hr (4 Days/Wk)</p>
+                  <p className="text-slate-500 text-[11px]">Hired directly by Highland Park Dental (TX) in 48 hrs</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="font-bold text-slate-900">Certified Medical Assistant • $28/hr</p>
+                  <p className="text-slate-500 text-[11px]">Hired directly by Scottsdale Family Med (AZ)</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="font-bold text-slate-900">Outpatient PTA • $41/hr</p>
+                  <p className="text-slate-500 text-[11px]">Hired directly by Coral Gables Ortho PT (FL)</p>
+                </div>
+              </div>
             </div>
           </aside>
 
           {/* RIGHT/MAIN JOB LISTING FEED (9 cols) */}
           <main className="lg:col-span-9 space-y-4">
-            {/* Feed Toolbar: Count + Active Filter Pills + Sort Dropdown */}
+            {/* Feed Toolbar: Count + Share Search Link + Sort Dropdown */}
             <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-sm sm:text-base font-bold text-slate-900">
@@ -910,21 +985,42 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-xs font-semibold text-slate-600 shrink-0">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value as any);
-                    setCurrentPage(1);
-                  }}
-                  className="text-xs font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-teal-600 focus:outline-none"
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleShareFilteredFeed}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                  title="Copy shareable link for this exact filtered feed"
                 >
-                  <option value="recommended">Priority Verified & Newest</option>
-                  <option value="newest">Newest Posted First</option>
-                  <option value="highest_pay">Highest Hourly Rate</option>
-                </select>
+                  {copiedSearchUrl ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Search Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5 text-teal-600" />
+                      <span>Share Search</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-600 shrink-0">Sort:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value as any);
+                      setCurrentPage(1);
+                    }}
+                    className="text-xs font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-teal-600 focus:outline-none"
+                  >
+                    <option value="recommended">Priority Verified & Newest</option>
+                    <option value="newest">Newest Posted First</option>
+                    <option value="highest_pay">Highest Hourly Rate</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -1080,6 +1176,158 @@ export default function HomePage() {
           </main>
         </div>
       </div>
+
+      {/* Floating Side-by-Side Clinic Comparison Bar (Up to 3 Clinics) */}
+      {comparedJobs.length > 0 && (
+        <div className="fixed bottom-4 inset-x-4 z-40 max-w-4xl mx-auto bg-slate-900/95 backdrop-blur-md text-white rounded-2xl border border-slate-700 p-3.5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-teal-400 uppercase tracking-wider">
+              <Scale className="w-4 h-4" />
+              <span>Compare Clinics ({comparedJobs.length}/3):</span>
+            </span>
+            {comparedJobs.map((cj) => (
+              <span
+                key={cj.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold"
+              >
+                <span className="truncate max-w-[140px]">{cj.clinicName}</span>
+                <span className="text-emerald-400">${cj.maxHourly}/hr</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = compareIds.filter((id) => id !== cj.id);
+                    localStorage.setItem('compare_clinic_jobs', JSON.stringify(next));
+                    window.dispatchEvent(new Event('compareJobsUpdated'));
+                  }}
+                  className="text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem('compare_clinic_jobs', '[]');
+                window.dispatchEvent(new Event('compareJobsUpdated'));
+                setShowCompareModal(false);
+              }}
+              className="text-xs font-semibold text-slate-400 hover:text-white px-2.5 py-1.5 cursor-pointer"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCompareModal(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs shadow-sm cursor-pointer"
+            >
+              Compare Side-by-Side →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Side-by-Side Clinic Comparison Modal */}
+      {showCompareModal && comparedJobs.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200 max-w-5xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-teal-700">
+                  Direct Practice Comparison Matrix
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                  Side-by-Side Clinic Workflow & Pay Comparison
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCompareModal(false)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {comparedJobs.map((cj) => (
+                <div
+                  key={cj.id}
+                  className="rounded-2xl border border-slate-200 p-5 space-y-4 bg-slate-50/60 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                        {cj.clinicType}
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                        <BadgeCheck className="w-3.5 h-3.5" /> NPI #{cj.npiNumber?.slice(0, 6)}•••
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-extrabold text-slate-900">{cj.title}</h4>
+                      <p className="text-xs font-bold text-slate-600 mt-0.5">
+                        {cj.clinicName} • {cj.location}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white border border-slate-200">
+                      <div className="text-xs text-slate-500 font-semibold">Verified Hourly Rate</div>
+                      <div className="text-xl font-black text-slate-900">
+                        ${cj.minHourly} – ${cj.maxHourly}
+                        <span className="text-xs font-bold text-slate-500">/hr</span>
+                      </div>
+                      <div className="text-[11px] font-bold text-emerald-700 mt-0.5">{cj.payComparison}</div>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-slate-900 block">Patient Slot Schedule:</span>
+                          <span className="text-slate-600">{cj.appointmentTime || 'Standard Unrushed Schedule'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <Laptop className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-slate-900 block">EHR / Practice Software:</span>
+                          <span className="text-slate-600">{cj.softwareUsed.join(', ')}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 pt-1">
+                        <span className="font-bold text-slate-900 block">Included Benefits:</span>
+                        {cj.benefits.map((b, i) => (
+                          <div key={i} className="flex items-center gap-1.5 text-slate-600">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{b}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200 flex gap-2">
+                    <Link
+                      href={`/jobs/${cj.id}`}
+                      onClick={() => setShowCompareModal(false)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs text-center transition-colors"
+                    >
+                      Apply Directly to {cj.clinicName} →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

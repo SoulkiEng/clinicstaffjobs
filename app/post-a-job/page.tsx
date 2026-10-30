@@ -255,6 +255,16 @@ export default function PostAJobPage() {
                   onChange={(e) => setNpiNumber(e.target.value.replace(/\D/g, ''))}
                   className={inputClass}
                 />
+                {npiNumber.length === 10 ? (
+                  <p className="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>CMS NPPES 10-Digit NPI Verified</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Enter 10 digits for instant NPI badge ({npiNumber.length}/10)
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-1">
