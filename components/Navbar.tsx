@@ -26,6 +26,7 @@ export default function Navbar() {
 
   const navItems = [
     { href: '/', label: 'Live Feed', icon: Compass },
+    { href: '/talent', label: 'Talent Pool', icon: Sparkles },
     { href: '/employers', label: 'Practices (B2B)', icon: Building2 },
     { href: '/career-resources', label: 'Clinician Hub', icon: BookOpen },
     { href: '/salary-calculator', label: 'Pay Calculator', icon: DollarSign },

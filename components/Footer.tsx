@@ -69,6 +69,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-xs">
               <li><Link href="/post-a-job" className="text-teal-400 font-bold hover:underline">+ Post a Practice Opening (100% Free)</Link></li>
+              <li><Link href="/talent" className="text-emerald-400 font-semibold hover:underline">Browse Confidential Clinician Talent Pool</Link></li>
               <li><Link href="/employers" className="hover:text-teal-400 transition-colors">B2B Direct Hiring & NPI Verification</Link></li>
               <li><Link href="/employers#google-jobs" className="hover:text-teal-400 transition-colors">Google for Jobs Structured Indexing</Link></li>
               <li><Link href="/dashboard/employer" className="hover:text-teal-400 transition-colors">Practice Employer Dashboard</Link></li>

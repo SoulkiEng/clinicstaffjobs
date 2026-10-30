@@ -10,6 +10,7 @@ const today = new Date().toISOString().split('T')[0];
 
 const coreRoutes = [
   { url: '/', priority: '1.0', changefreq: 'hourly' },
+  { url: '/talent/', priority: '0.9', changefreq: 'hourly' },
   { url: '/post-a-job/', priority: '0.9', changefreq: 'daily' },
   { url: '/employers/', priority: '0.9', changefreq: 'weekly' },
   { url: '/career-resources/', priority: '0.9', changefreq: 'weekly' },
@@ -21,11 +22,21 @@ const coreRoutes = [
   { url: '/terms/', priority: '0.5', changefreq: 'monthly' },
 ];
 
+const STATE_CODES_52 = [
+  'al','ak','az','ar','ca','co','ct','de','dc','fl','ga','hi','id','il','in','ia','ks','ky','la','me','md','ma','mi','mn','ms','mo','mt','ne','nv','nh','nj','nm','ny','nc','nd','oh','ok','or','pa','pr','ri','sc','sd','tn','tx','ut','vt','va','wa','wv','wi','wy'
+];
+
 const xmlEntries = [];
 
 for (const route of coreRoutes) {
   xmlEntries.push(
     `  <url>\n    <loc>${SITE_URL}${route.url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${route.changefreq}</changefreq>\n    <priority>${route.priority}</priority>\n  </url>`
+  );
+}
+
+for (const st of STATE_CODES_52) {
+  xmlEntries.push(
+    `  <url>\n    <loc>${SITE_URL}/states/${st}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>`
   );
 }
 

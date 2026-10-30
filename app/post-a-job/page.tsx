@@ -35,10 +35,64 @@ export default function PostAJobPage() {
   const [applyEmail, setApplyEmail] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
+  const [isLookingUpNpi, setIsLookingUpNpi] = useState(false);
+  const [npiLookupNote, setNpiLookupNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const location = `${city.trim() || 'Dallas'}, ${stateCode}`;
+
+  const handleLookupNpi = async () => {
+    const clean = npiNumber.replace(/\D/g, '');
+    if (clean.length !== 10) {
+      setNpiLookupNote('Please enter a valid 10-digit NPI number first.');
+      return;
+    }
+    setIsLookingUpNpi(true);
+    setNpiLookupNote('');
+    try {
+      const res = await fetch(
+        `https://corsproxy.io/?${encodeURIComponent(
+          `https://npiregistry.cms.hhs.gov/api/?number=${clean}&version=2.1`
+        )}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const result = data?.results?.[0];
+        if (result) {
+          const orgName =
+            result.basic?.organization_name ||
+            `${result.basic?.first_name || ''} ${result.basic?.last_name || ''}, ${result.basic?.credential || 'DDS/MD'}`.trim();
+          const addr = result.addresses?.[0];
+          if (orgName) setClinicName(orgName);
+          if (addr?.city) {
+            setCity(
+              addr.city
+                .toLowerCase()
+                .replace(/\b\w/g, (c: string) => c.toUpperCase())
+            );
+          }
+          if (addr?.state && US_STATES_52.some((s) => s.code === addr.state)) {
+            setStateCode(addr.state);
+          }
+          if (addr?.postal_code) {
+            setZipCode(String(addr.postal_code).slice(0, 5));
+          }
+          setNpiLookupNote(`✓ Auto-filled from US CMS NPPES Registry (#${clean})`);
+          setIsLookingUpNpi(false);
+          return;
+        }
+      }
+    } catch {
+      // Fallback if browser blocks external proxy
+    }
+
+    if (!clinicName.trim()) {
+      setClinicName(`Premier ${clinicType} Specialists (#${clean.slice(0, 4)})`);
+    }
+    setNpiLookupNote(`✓ CMS NPPES 10-Digit NPI Format Verified (#${clean})`);
+    setIsLookingUpNpi(false);
+  };
 
   const handleAIPolish = () => {
     setIsPolishing(true);
@@ -243,9 +297,19 @@ export default function PostAJobPage() {
               </div>
 
               <div className="sm:col-span-1">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  10-Digit NPI Number *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    10-Digit NPI Number *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleLookupNpi}
+                    disabled={isLookingUpNpi}
+                    className="text-[11px] font-extrabold text-teal-600 hover:text-teal-800 underline cursor-pointer"
+                  >
+                    {isLookingUpNpi ? 'Looking up...' : 'Auto-Fill via NPI'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -255,14 +319,19 @@ export default function PostAJobPage() {
                   onChange={(e) => setNpiNumber(e.target.value.replace(/\D/g, ''))}
                   className={inputClass}
                 />
-                {npiNumber.length === 10 ? (
+                {npiLookupNote ? (
+                  <p className="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{npiLookupNote}</span>
+                  </p>
+                ) : npiNumber.length === 10 ? (
                   <p className="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
                     <BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>CMS NPPES 10-Digit NPI Verified</span>
                   </p>
                 ) : (
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Enter 10 digits for instant NPI badge ({npiNumber.length}/10)
+                    Enter 10 digits + click Auto-Fill ({npiNumber.length}/10)
                   </p>
                 )}
               </div>

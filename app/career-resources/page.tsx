@@ -212,7 +212,7 @@ export default function CareerResourcesB2CPage() {
             {US_STATES_52.map((st) => (
               <Link
                 key={st.code}
-                href={`/?state=${st.code}`}
+                href={`/states/${st.code.toLowerCase()}`}
                 className="px-3 py-2 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 text-xs font-semibold text-slate-700 hover:text-teal-900 flex items-center justify-between transition-all"
               >
                 <span className="truncate">{st.name}</span>
