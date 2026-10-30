@@ -4,7 +4,17 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { Stethoscope, Lock, Mail, Building2, User, Phone, MapPin, ArrowRight } from 'lucide-react';
+import {
+  Stethoscope,
+  Building2,
+  User,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Loader2,
+  ShieldCheck
+} from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -13,29 +23,68 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [practiceName, setPracticeName] = useState('');
   const [specialty, setSpecialty] = useState('Dental');
+  const [candidateRole, setCandidateRole] = useState('Registered Dental Hygienist (RDH)');
+  const [licenseNumber, setLicenseNumber] = useState('');
   const [location, setLocation] = useState('Dallas, TX');
   const [phone, setPhone] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signup({
-      name: name || (role === 'employer' ? 'Practice Manager' : 'Clinical Candidate'),
-      email,
-      role,
-      practiceName: role === 'employer' ? practiceName : undefined,
-      practiceType: role === 'employer' ? specialty : undefined,
-      specialty: role === 'candidate' ? specialty : undefined,
-      location,
-      phone
-    });
+    setErrorMsg(null);
 
-    router.push(role === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
+    if (!name.trim()) {
+      setErrorMsg('Please enter your full name.');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+    if (role === 'employer' && !practiceName.trim()) {
+      setErrorMsg('Please enter your Practice or Clinic name.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await signup({
+        name: name.trim(),
+        email: email.trim(),
+        role,
+        password,
+        practiceName: role === 'employer' ? practiceName.trim() : undefined,
+        practiceType: role === 'employer' ? specialty : undefined,
+        specialty: role === 'candidate' ? candidateRole : undefined,
+        licenseNumber: role === 'candidate' && licenseNumber.trim() ? licenseNumber.trim() : undefined,
+        location: location.trim() || 'Dallas, TX',
+        phone: phone.trim() || undefined,
+      });
+
+      if (!res.ok) {
+        setErrorMsg(res.error || 'Could not create account.');
+        return;
+      }
+
+      router.push(role === 'employer' ? '/dashboard/employer' : '/dashboard/candidate');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  const inputClass =
+    'w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium';
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
         <Link href="/" className="inline-flex items-center gap-2 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center text-white shadow-md">
@@ -45,72 +94,90 @@ export default function SignupPage() {
             ClinicStaff<span className="text-teal-600">Jobs</span>
           </span>
         </Link>
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          Create Your Account
-        </h2>
-        <p className="text-xs text-slate-600">
-          Join the direct healthcare hiring network
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          Create Your Verified Account
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600">
+          Direct hiring for independent US dental, medical, and specialty practices
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="bg-white py-8 px-6 shadow-sm border border-slate-200 rounded-2xl sm:px-10 space-y-6">
+        <div className="bg-white py-8 px-6 shadow-sm border border-slate-200/90 rounded-2xl sm:px-10 space-y-6">
           {/* Role Toggle */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setRole('employer')}
-              className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                role === 'employer'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-teal-600" />
-              <span>I am an Employer / Clinic</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('candidate')}
-              className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                role === 'candidate'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <User className="w-4 h-4 text-cyan-600" />
-              <span>I am a Job Seeker / Staff</span>
-            </button>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 text-center">
+              I am registering as a:
+            </label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setRole('employer');
+                  setErrorMsg(null);
+                }}
+                className={`py-2.5 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  role === 'employer'
+                    ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Building2 className="w-4 h-4 text-teal-600" />
+                <span>Practice / Employer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRole('candidate');
+                  setErrorMsg(null);
+                }}
+                className={`py-2.5 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  role === 'candidate'
+                    ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <User className="w-4 h-4 text-cyan-600" />
+                <span>Clinician / Job Seeker</span>
+              </button>
+            </div>
           </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name & Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  {role === 'employer' ? 'Your Name / Title' : 'Full Name'} *
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  {role === 'employer' ? 'Doctor / Manager Name *' : 'Full Legal Name *'}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder={role === 'employer' ? 'Dr. Sarah Mitchell' : 'Jessica Taylor'}
+                  placeholder={role === 'employer' ? 'Dr. Sarah Mitchell, DDS' : 'Jessica Taylor, RDH'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Email Address *
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="name@email.com"
+                  placeholder={role === 'employer' ? 'hiring@practice.com' : 'clinician@email.com'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className={inputClass}
                 />
               </div>
             </div>
@@ -119,116 +186,159 @@ export default function SignupPage() {
             {role === 'employer' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Practice / Clinic Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. North Dallas Dental"
+                    placeholder="e.g. Preston Hollow Dental Studio"
                     value={practiceName}
                     onChange={(e) => setPracticeName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Practice Specialty *
                   </label>
                   <select
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:border-teal-500 focus:outline-none"
+                    className={inputClass}
                   >
                     <option value="Dental">Dental Practice</option>
-                    <option value="Vision">Optometry & Eye Care</option>
-                    <option value="Physical Therapy">Physical Therapy / Ortho</option>
-                    <option value="Dermatology & MedSpa">Dermatology & MedSpa</option>
-                    <option value="Family Medicine">Family Medicine Clinic</option>
+                    <option value="Family Medicine">Family Medicine / Primary Care</option>
+                    <option value="Vision">Optometry & Ophthalmology</option>
+                    <option value="Physical Therapy">Physical Therapy & Orthopedic Rehab</option>
+                    <option value="Dermatology & MedSpa">Dermatology & Medical Aesthetics</option>
                   </select>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    Your Clinical Role *
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Primary Clinical Role *
                   </label>
                   <select
-                    value={specialty}
-                    onChange={(e) => setSpecialty(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:border-teal-500 focus:outline-none"
+                    value={candidateRole}
+                    onChange={(e) => setCandidateRole(e.target.value)}
+                    className={inputClass}
                   >
-                    <option value="Registered Dental Hygienist">Registered Dental Hygienist (RDH)</option>
-                    <option value="Dental Assistant (RDA/EFDA)">Dental Assistant (RDA/EFDA)</option>
-                    <option value="Certified Medical Assistant">Certified Medical Assistant (CMA)</option>
-                    <option value="Physical Therapy Aide">Physical Therapy Aide / Tech</option>
-                    <option value="Optometric Tech">Optometric & Vision Tech</option>
-                    <option value="Clinic Front Desk">Clinic Front Desk & Billing</option>
+                    <option value="Registered Dental Hygienist (RDH)">Registered Dental Hygienist (RDH)</option>
+                    <option value="Lead Dental Assistant (RDA / EFDA)">Dental Assistant (RDA / EFDA)</option>
+                    <option value="Certified Medical Assistant (CMA)">Certified Medical Assistant (CMA)</option>
+                    <option value="Physical Therapist Assistant (PTA)">Physical Therapist Assistant (PTA / Aide)</option>
+                    <option value="Optometric / Ophthalmic Technician">Optometric Tech / Licensed Optician</option>
+                    <option value="Dermatology MA / Medical Aesthetician">Dermatology MA / Medical Aesthetician</option>
+                    <option value="Clinic Front Office / Treatment Coordinator">Front Office & Practice Manager</option>
+                    <option value="Associate Dentist (DDS / DMD)">Associate Dentist (DDS / DMD)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    Phone Number
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    State License # (Optional)
                   </label>
                   <input
-                    type="tel"
-                    placeholder="(555) 000-0000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                    type="text"
+                    placeholder="e.g. TX-RDH-94821"
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    className={inputClass}
                   />
                 </div>
               </div>
             )}
 
-            {/* Metro & Password */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Metro, Phone & Password */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Metro Location *
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  City & State *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Dallas, TX"
+                  placeholder="Dallas, TX"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Create Password *
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Phone Number
                 </label>
                 <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  type="tel"
+                  placeholder="(214) 555-0199"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className={inputClass}
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Min 6 chars"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputClass} pr-9`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 p-0.5"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2 text-xs text-slate-600">
+              <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
+              <span>
+                Your profile is protected. We never sell clinician contact info to third-party staffing agencies.
+              </span>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 mt-4"
+              disabled={isSubmitting}
+              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
             >
-              <span>Create {role === 'employer' ? 'Practice' : 'Candidate'} Account</span>
-              <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create {role === 'employer' ? 'Practice Employer' : 'Clinician'} Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="text-center pt-2">
+          <div className="text-center pt-1">
             <p className="text-xs text-slate-600">
               Already have an account?{' '}
               <Link href="/login" className="text-teal-600 font-bold hover:underline">
-                Sign In
+                Sign In Here
               </Link>
             </p>
           </div>

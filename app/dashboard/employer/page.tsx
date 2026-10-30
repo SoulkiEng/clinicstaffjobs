@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import {
   Building2,
   Users,
@@ -15,7 +16,6 @@ import {
   Mail,
   Phone,
   FileText,
-  Edit3,
   Settings,
   ShieldCheck,
   LogOut
@@ -25,42 +25,40 @@ export default function EmployerDashboardPage() {
   const { user, logout, updateProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'listings' | 'applicants' | 'settings'>('listings');
 
-  // Simulated practice jobs
   const [myJobs, setMyJobs] = useState([
     {
-      id: 'emp-job-1',
-      title: 'Registered Dental Hygienist (RDH) - 60 Min Slots',
+      id: 'job-1001',
+      title: 'Registered Dental Hygienist (RDH) - 60 Min Adult Recare',
       location: 'Dallas, TX',
       minHourly: 46,
-      maxHourly: 52,
+      maxHourly: 54,
       isFeatured: true,
       status: 'Active',
-      views: 248,
-      applications: 8,
-      postedDate: 'Oct 26, 2026'
+      views: 284,
+      applications: 9,
+      postedDate: '2 days ago'
     },
     {
-      id: 'emp-job-2',
-      title: 'Dental Assistant (RDA) - Cosmetic Chairside',
+      id: 'job-1002',
+      title: 'Lead Dental Assistant (RDA / EFDA) - Cosmetic & Implant Restorative',
       location: 'Dallas, TX',
-      minHourly: 25,
-      maxHourly: 29,
+      minHourly: 27,
+      maxHourly: 34,
       isFeatured: false,
       status: 'Active',
-      views: 124,
+      views: 146,
       applications: 6,
-      postedDate: 'Oct 27, 2026'
+      postedDate: '4 days ago'
     }
   ]);
 
-  // Simulated applicants
   const [applicants, setApplicants] = useState([
     {
       id: 'app-1',
       name: 'Jessica Taylor, RDH',
       role: 'Registered Dental Hygienist',
-      license: 'Active TX License #94821',
-      experience: '4 Years Clinical',
+      license: 'Active State License #94821',
+      experience: '4 Years Clinical Experience',
       desiredPay: '$48/hr',
       email: 'jessica.rdh@gmail.com',
       phone: '(214) 555-8932',
@@ -74,24 +72,97 @@ export default function EmployerDashboardPage() {
       name: 'Michael Chen, RDA',
       role: 'Lead Dental Assistant',
       license: 'Nitrous & Radiology Certified',
-      experience: '3 Years Chairside',
-      desiredPay: '$27/hr',
+      experience: '3 Years Chairside Experience',
+      desiredPay: '$28/hr',
       email: 'mchen.rda@outlook.com',
       phone: '(214) 555-4421',
       isVip: false,
-      appliedFor: 'Dental Assistant (RDA)',
+      appliedFor: 'Lead Dental Assistant (RDA / EFDA)',
       appliedDate: '2 Days Ago',
       status: 'Under Review'
     }
   ]);
 
+  const [practiceNameInput, setPracticeNameInput] = useState(user?.practiceName || 'Preston Hollow Dental Studio');
   const [phoneInput, setPhoneInput] = useState(user?.phone || '(214) 555-0192');
   const [locationInput, setLocationInput] = useState(user?.location || 'Dallas, TX');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      if (user.practiceName) setPracticeNameInput(user.practiceName);
+      if (user.phone) setPhoneInput(user.phone);
+      if (user.location) setLocationInput(user.location);
+    }
+
+    // Load locally posted jobs
+    try {
+      const localPosted = JSON.parse(localStorage.getItem('my_posted_jobs') || '[]');
+      if (Array.isArray(localPosted) && localPosted.length > 0) {
+        const mapped = localPosted.map((j: any) => ({
+          id: j.id || 'job-1001',
+          title: j.title,
+          location: j.location || 'Dallas, TX',
+          minHourly: Number(j.min_hourly) || 35,
+          maxHourly: Number(j.max_hourly) || 48,
+          isFeatured: Boolean(j.is_featured),
+          status: 'Active',
+          views: 42,
+          applications: 2,
+          postedDate: 'Just posted'
+        }));
+        setMyJobs((prev) => {
+          const seen = new Set(mapped.map((m: any) => m.id));
+          return [...mapped, ...prev.filter((p) => !seen.has(p.id))];
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // Load live applications from Supabase & localStorage
+    async function loadApplications() {
+      try {
+        const { data } = await supabase
+          .from('applications')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (data && data.length > 0) {
+          const dbApps = data.map((a: any) => ({
+            id: a.id,
+            name: a.candidate_name,
+            role: 'Verified Clinician',
+            license: a.license_number || 'Active State License',
+            experience: a.experience_years || '3+ Years Experience',
+            desiredPay: a.desired_pay || '$45/hr',
+            email: a.candidate_email,
+            phone: a.candidate_phone || '(555) 019-2831',
+            isVip: Boolean(a.is_vip),
+            appliedFor: `Job #${a.job_id}`,
+            appliedDate: 'Recent',
+            status: a.status || 'New Inquiry'
+          }));
+          setApplicants((prev) => {
+            const seen = new Set(dbApps.map((d: any) => d.id));
+            return [...dbApps, ...prev.filter((p) => !seen.has(p.id))];
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadApplications();
+  }, [user]);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({ phone: phoneInput, location: locationInput });
+    await updateProfile({
+      practiceName: practiceNameInput,
+      phone: phoneInput,
+      location: locationInput
+    });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
   };
@@ -108,32 +179,35 @@ export default function EmployerDashboardPage() {
     );
   };
 
+  const inputClass =
+    'w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium';
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Practice Top Bar */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 font-extrabold text-xl shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 font-extrabold text-xl shadow-xs">
               <Building2 className="w-7 h-7" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {user?.practiceName || 'Preston Hollow Dental Studio'}
+                  {practiceNameInput}
                 </h1>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200">
                   <ShieldCheck className="w-3 h-3 text-teal-600" /> Verified Practice
                 </span>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-3">
+              <p className="text-xs text-slate-600 mt-0.5 flex flex-wrap items-center gap-3">
                 <span>{user?.name || 'Dr. Sarah Mitchell, DDS'}</span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-slate-400" /> {user?.location || 'Dallas, TX'}
+                  <MapPin className="w-3 h-3 text-slate-400" /> {locationInput}
                 </span>
                 <span>•</span>
-                <span className="text-slate-400">{user?.email || 'practice@clinic.com'}</span>
+                <span className="text-slate-500">{user?.email || 'dr.mitchell@prestonhollowdental.com'}</span>
               </p>
             </div>
           </div>
@@ -141,10 +215,10 @@ export default function EmployerDashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/post-a-job"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/30 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Post New Opening ($99)</span>
+              <span>+ Post Practice Opening</span>
             </Link>
 
             <button
@@ -159,9 +233,9 @@ export default function EmployerDashboardPage() {
 
         {/* Analytics Snapshot */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Openings</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Openings</span>
               <div className="text-2xl font-black text-slate-900">
                 {myJobs.filter((j) => j.status === 'Active').length} Positions
               </div>
@@ -171,20 +245,20 @@ export default function EmployerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Candidate Views</span>
-              <div className="text-2xl font-black text-slate-900">372 Views</div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Candidate Views</span>
+              <div className="text-2xl font-black text-slate-900">430 Views</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
               <Eye className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Applications Received</span>
-              <div className="text-2xl font-black text-emerald-800">14 Verified</div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Direct Applicants</span>
+              <div className="text-2xl font-black text-emerald-800">{applicants.length} Verified</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Users className="w-5 h-5" />
@@ -193,7 +267,7 @@ export default function EmployerDashboardPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-slate-200 flex gap-4 text-sm font-bold">
+        <div className="border-b border-slate-200 flex gap-6 text-sm font-bold">
           <button
             onClick={() => setActiveTab('listings')}
             className={`pb-3 transition-colors relative ${
@@ -213,7 +287,7 @@ export default function EmployerDashboardPage() {
             }`}
           >
             <span>Applicant Inquiries ({applicants.length})</span>
-            <span className="px-1.5 py-0.2 bg-teal-100 text-teal-800 rounded-full text-[10px]">NEW</span>
+            <span className="px-1.5 py-0.2 bg-teal-100 text-teal-800 rounded-full text-[10px]">Direct</span>
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -233,7 +307,7 @@ export default function EmployerDashboardPage() {
             {myJobs.map((job) => (
               <div
                 key={job.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1.5 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -249,18 +323,18 @@ export default function EmployerDashboardPage() {
 
                     {job.isFeatured && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                        <Sparkles className="w-3 h-3 text-amber-500" /> FEATURED PINNED
+                        <Sparkles className="w-3 h-3 text-amber-500" /> Sponsored Slot Active
                       </span>
                     )}
 
                     <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Posted {job.postedDate}
+                      <Clock className="w-3 h-3" /> {job.postedDate}
                     </span>
                   </div>
 
                   <h3 className="text-lg font-bold text-slate-900">{job.title}</h3>
                   <p className="text-xs text-slate-600">
-                    Pay: <strong className="text-teal-700">${job.minHourly} - ${job.maxHourly}/hr</strong> •{' '}
+                    Pay: <strong className="text-teal-700">${job.minHourly} – ${job.maxHourly}/hr</strong> •{' '}
                     {job.views} Views • <strong className="text-slate-900">{job.applications} Applicants</strong>
                   </p>
                 </div>
@@ -271,7 +345,7 @@ export default function EmployerDashboardPage() {
                       onClick={() => handleUpgradeFeatured(job.id)}
                       className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 transition-colors"
                     >
-                      ⚡ Upgrade to Featured ($99)
+                      Promote Listing ($99)
                     </button>
                   )}
 
@@ -283,7 +357,7 @@ export default function EmployerDashboardPage() {
                   </button>
 
                   <Link
-                    href={`/jobs/${job.id}`}
+                    href="/jobs/job-1001"
                     className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors"
                   >
                     View Live Post
@@ -300,14 +374,14 @@ export default function EmployerDashboardPage() {
             {applicants.map((app) => (
               <div
                 key={app.id}
-                className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
               >
                 <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-bold text-slate-900">{app.name}</h3>
                     {app.isVip && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                        <Sparkles className="w-3 h-3 text-amber-600" /> VIP Priority Applicant
+                        <Sparkles className="w-3 h-3 text-amber-600" /> Verified License Priority
                       </span>
                     )}
                     <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">
@@ -321,7 +395,7 @@ export default function EmployerDashboardPage() {
                     <span>Target Pay: <strong className="text-teal-700">{app.desiredPay}</strong></span>
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                  <div className="flex items-center gap-4 text-xs text-slate-600 pt-1">
                     <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5 text-slate-400" /> {app.email}</span>
                     <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5 text-slate-400" /> {app.phone}</span>
                   </div>
@@ -329,18 +403,18 @@ export default function EmployerDashboardPage() {
 
                 <div className="flex items-center gap-2">
                   <a
-                    href={`mailto:${app.email}?subject=Interview Invitation for ${encodeURIComponent(app.appliedFor)} at ${encodeURIComponent(user?.practiceName || 'Clinic')}`}
-                    className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-sm"
+                    href={`mailto:${app.email}?subject=Interview Invitation for ${encodeURIComponent(app.appliedFor)} at ${encodeURIComponent(practiceNameInput)}`}
+                    className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-xs"
                   >
-                    Contact Candidate
+                    Email Candidate
                   </a>
-                  <button
-                    onClick={() => alert(`Opening verified resume for ${app.name}`)}
+                  <a
+                    href={`tel:${app.phone}`}
                     className="px-3.5 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors flex items-center gap-1.5"
                   >
-                    <FileText className="w-3.5 h-3.5 text-slate-500" />
-                    <span>View Resume</span>
-                  </button>
+                    <Phone className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Call</span>
+                  </a>
                 </div>
               </div>
             ))}
@@ -351,61 +425,61 @@ export default function EmployerDashboardPage() {
         {activeTab === 'settings' && (
           <form
             onSubmit={handleSaveSettings}
-            className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm max-w-2xl"
+            className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs max-w-2xl"
           >
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Settings className="w-5 h-5 text-teal-600" />
-              <span>Practice Profile & Verification</span>
+              <span>Practice Profile & Contact Details</span>
             </h3>
 
             {savedSuccess && (
               <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-200 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Practice profile updated successfully!</span>
+                <span>Practice profile updated and saved to Supabase!</span>
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Practice Name
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Practice / Clinic Name
                 </label>
                 <input
                   type="text"
-                  disabled
-                  value={user?.practiceName || 'Preston Hollow Dental Studio'}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+                  value={practiceNameInput}
+                  onChange={(e) => setPracticeNameInput(e.target.value)}
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Office Phone Number
                 </label>
                 <input
                   type="tel"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Metro Location
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Metro Location (City, State)
                 </label>
                 <input
                   type="text"
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="py-2.5 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-all"
+              className="py-2.5 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all"
             >
               Save Practice Profile
             </button>

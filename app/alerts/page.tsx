@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 import { Bell, ArrowLeft, CheckCircle2, ShieldCheck, Sparkles, MessageSquare, Mail, Smartphone } from 'lucide-react';
 
 export default function AlertsPage() {
@@ -11,11 +12,26 @@ export default function AlertsPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [channel, setChannel] = useState<'email' | 'sms' | 'whatsapp'>('whatsapp');
-  const [isVip, setIsVip] = useState(true);
+  const [isVip, setIsVip] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await supabase.from('alerts').insert([
+        {
+          id: `alert-${Date.now()}`,
+          role,
+          city,
+          min_pay: Number(minPay) || 30,
+          channel,
+          contact: channel === 'email' ? email : phone,
+          is_vip: isVip,
+        }
+      ]);
+    } catch {
+      // ignore if table offline
+    }
     setIsSubscribed(true);
   };
 

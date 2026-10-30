@@ -238,7 +238,7 @@ export default function PostAJobPage() {
                   placeholder="e.g. North Dallas Dental Studio"
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -252,7 +252,7 @@ export default function PostAJobPage() {
                   placeholder="hiring@yourclinic.com"
                   value={applyEmail}
                   onChange={(e) => setApplyEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -269,7 +269,7 @@ export default function PostAJobPage() {
                   placeholder="e.g. Registered Dental Hygienist (RDH)"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -280,7 +280,7 @@ export default function PostAJobPage() {
                 <select
                   value={clinicType}
                   onChange={(e) => setClinicType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-teal-500 focus:outline-none"
                 >
                   <option value="Dental">Dental Practice</option>
                   <option value="Vision">Optometry & Eye Care</option>
@@ -303,7 +303,7 @@ export default function PostAJobPage() {
                   placeholder="e.g. Dallas, TX"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -317,7 +317,7 @@ export default function PostAJobPage() {
                   placeholder="45"
                   value={minHourly}
                   onChange={(e) => setMinHourly(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -331,7 +331,7 @@ export default function PostAJobPage() {
                   placeholder="52"
                   value={maxHourly}
                   onChange={(e) => setMaxHourly(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -347,7 +347,7 @@ export default function PostAJobPage() {
                   placeholder="e.g. 60-Min Adult Prophy Slots"
                   value={appointmentTime}
                   onChange={(e) => setAppointmentTime(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -360,7 +360,7 @@ export default function PostAJobPage() {
                   placeholder="e.g. Dentrix, Dexis, iTero"
                   value={software}
                   onChange={(e) => setSoftware(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -377,8 +377,8 @@ export default function PostAJobPage() {
                   disabled={isPolishing}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-300 text-teal-800 text-xs font-bold hover:shadow-sm transition-all"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-teal-600 animate-spin" />
-                  <span>{isPolishing ? 'Polishing...' : '✨ Polish with Gemini AI'}</span>
+                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                  <span>{isPolishing ? 'Polishing...' : '✨ Polish with AI Assistant'}</span>
                 </button>
               </div>
               <textarea
@@ -386,35 +386,55 @@ export default function PostAJobPage() {
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:border-teal-500 focus:outline-none leading-relaxed"
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none leading-relaxed"
               />
             </div>
 
             {/* Plan Selector */}
             <div className="pt-4 border-t border-slate-100 space-y-3">
-              <h3 className="text-base font-bold text-slate-900">2. Select Your Promotion Tier</h3>
+              <h3 className="text-base font-bold text-slate-900">2. Select Your Listing Package</h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Featured Tier ($99) - Pre-selected */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Standard Tier ($49) */}
+                <div
+                  onClick={() => setSelectedPlan('standard')}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative ${
+                    selectedPlan === 'standard'
+                      ? 'border-slate-900 bg-slate-50 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-slate-900">Standard 30-Day</span>
+                    <span className="text-xl font-black text-slate-900">$49</span>
+                  </div>
+                  <ul className="text-xs text-slate-600 mt-2 space-y-1">
+                    <li className="flex items-center gap-1.5">✓ 30-Day Verified Listing</li>
+                    <li className="flex items-center gap-1.5">✓ Google for Jobs Indexing</li>
+                    <li className="flex items-center gap-1.5">✓ Direct Applicant Routing</li>
+                  </ul>
+                </div>
+
+                {/* Featured Tier ($99) */}
                 <div
                   onClick={() => setSelectedPlan('featured')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative ${
                     selectedPlan === 'featured'
-                      ? 'border-amber-400 bg-amber-50/40 shadow-sm'
+                      ? 'border-teal-600 bg-teal-50/30 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <div className="absolute -top-2.5 right-4 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    Most Popular
+                  <div className="absolute -top-2.5 right-3 bg-teal-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    Recommended
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-slate-900">Featured 30-Day</span>
-                    <span className="text-xl font-black text-amber-600">$99</span>
+                    <span className="font-bold text-sm text-slate-900">Sponsored Slot</span>
+                    <span className="text-xl font-black text-teal-700">$99</span>
                   </div>
                   <ul className="text-xs text-slate-600 mt-2 space-y-1">
-                    <li className="flex items-center gap-1.5">✓ Pinned to Top of {location || 'Metro'}</li>
-                    <li className="flex items-center gap-1.5">✓ Gold Highlight & Urgent Badge</li>
-                    <li className="flex items-center gap-1.5">✓ Google for Jobs Priority Indexing</li>
+                    <li className="flex items-center gap-1.5">✓ Top Sponsored Placement</li>
+                    <li className="flex items-center gap-1.5">✓ Verified Practice Badge</li>
+                    <li className="flex items-center gap-1.5">✓ Priority Google Indexing</li>
                   </ul>
                 </div>
 
@@ -423,18 +443,18 @@ export default function PostAJobPage() {
                   onClick={() => setSelectedPlan('premium')}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative ${
                     selectedPlan === 'premium'
-                      ? 'border-teal-500 bg-teal-50/40 shadow-sm'
+                      ? 'border-amber-500 bg-amber-50/30 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-slate-900">VIP Multi-Blast</span>
-                    <span className="text-xl font-black text-teal-700">$179</span>
+                    <span className="font-bold text-sm text-slate-900">VIP Alert Blast</span>
+                    <span className="text-xl font-black text-amber-700">$179</span>
                   </div>
                   <ul className="text-xs text-slate-600 mt-2 space-y-1">
-                    <li className="flex items-center gap-1.5">✓ Everything in Featured</li>
-                    <li className="flex items-center gap-1.5">✓ Direct SMS & WhatsApp Alert to 5,000+ candidates</li>
-                    <li className="flex items-center gap-1.5">✓ Featured in Weekly Email Blast</li>
+                    <li className="flex items-center gap-1.5">✓ Everything in Sponsored</li>
+                    <li className="flex items-center gap-1.5">✓ SMS/WhatsApp Candidate Blast</li>
+                    <li className="flex items-center gap-1.5">✓ Weekly Clinician Digest</li>
                   </ul>
                 </div>
               </div>
@@ -444,7 +464,7 @@ export default function PostAJobPage() {
             <div className="pt-4 border-t border-slate-100 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> 256-Bit Encrypted Stripe Checkout
+                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> 256-Bit Encrypted Checkout
                 </span>
                 <span className="text-xs font-bold text-slate-700">Apple Pay / Google Pay / Card</span>
               </div>
@@ -463,7 +483,7 @@ export default function PostAJobPage() {
                   <>
                     <CreditCard className="w-5 h-5" />
                     <span>
-                      Pay {selectedPlan === 'featured' ? '$99' : selectedPlan === 'premium' ? '$179' : '$0'} & Publish Listing Live
+                      Pay {selectedPlan === 'featured' ? '$99' : selectedPlan === 'premium' ? '$179' : '$49'} & Publish Listing Live
                     </span>
                   </>
                 )}
